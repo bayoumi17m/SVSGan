@@ -100,6 +100,7 @@ class SVSGan(object):
         self.batch_size = batch_size
         self.real = Variable(torch.ones(batch_size,1))
         self.fake = Variable(torch.zeros(batch_size,1))
+        self.model_name = "SVSGan"
 
 
     def save(self):
@@ -117,3 +118,5 @@ class SVSGan(object):
 
         self.G.load_state_dict(torch.load(os.path.join(save_dir, self.model_name + '_G.pkl')))
         self.D.load_state_dict(torch.load(os.path.join(save_dir, self.model_name + '_D.pkl')))
+
+

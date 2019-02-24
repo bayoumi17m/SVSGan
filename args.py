@@ -3,9 +3,9 @@ import argparse
 def parse_arguments():
     parser = argparse.ArgumentParser()
     #parser.add_argument('--dataset', type=str, default='mnist', help='Load a previous dataset')
-    parser.add_argument('--dataroot', type=str, default='.', help='path to dataset')
+    parser.add_argument('--dataroot', type=str, default='./data/', help='path to dataset')
     parser.add_argument('--resume', type=str, default=None, help='File to resume')
-    #parser.add_argument('--workers', type=int, help='number of data loading workers', default=4)
+    parser.add_argument('--workers', type=int, help='number of data loading workers', default=4)
     parser.add_argument('--batch_size', type=int, default=128, help='input batch size')
     parser.add_argument('--lrG', type=float, default=0.001,
             help='learning rate for generator, default=0.001')
@@ -17,6 +17,7 @@ def parse_arguments():
     parser.add_argument('--Dbeta2', type=float, default=0.999, help='Discriminator beta2 for adam. default=0.999')
     parser.add_argument('--cuda', action='store_true', help='enables cuda')
     parser.add_argument('--seed', default=100, type=int, help='Random seed.')
+    parser.add_argument('--load', action="store_true", help='load dataset')
     args = parser.parse_args()
 
     return args

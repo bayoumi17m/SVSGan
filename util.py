@@ -27,5 +27,13 @@ class DSD100Dataset(Dataset):
 
 
         def __getitem__(self, _):
-            return np.random.choice(self.data)[1]
+            return np.random.choice(self.data)
+
+
+def get_loader(args):
+    dataset = DSD100Dataset(args.dataroot)
+    data_loader = torch.utils.data.DataLoader(
+        dataset = dataset, batch_size= args.batch_size, shuffle=True,num_workers=args.workers)
+
+    return data_loader
 
