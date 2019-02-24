@@ -15,7 +15,8 @@ class DSD100Dataset(Dataset):
         for filename in os.listdir(root_dir):
             if filename.endswith(".wav"):
                 rate, data = scipy.io.wavefile.read(filename)
-                f, t, Sxx = scipy.signal.spectrogram(data,rate)
+                f, t, Sxx = scipy.signal.spectrogram(data,rate,mode="magnitude")
+                f, t, Sxx = scipy.signal.spectrogram(data,rate,mode="angle")
 
                 self.data[i] = (rate,Sxx)
 
