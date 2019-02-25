@@ -16,9 +16,9 @@ class DSD100Dataset(Dataset):
             if filename.endswith(".wav"):
                 rate, data = scipy.io.wavefile.read(filename)
                 f, t, Sxx = scipy.signal.spectrogram(data,rate,mode="magnitude")
-                f, t, Sxx = scipy.signal.spectrogram(data,rate,mode="angle")
+                fa, ta, Sxxa = scipy.signal.spectrogram(data,rate,mode="angle")
 
-                self.data[i] = (rate,Sxx)
+                self.data[i] = ((f,t,fa,ta,Sxxa),(rate,Sxx))
 
             else:
                 pass
