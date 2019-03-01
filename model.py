@@ -105,18 +105,18 @@ class Discriminator(nn.Module):
 class SVSGan(object):
     """Docstring for SVSGan"""
 
-    def __init__(self,N_FFT,lrG,lrD,Gbeta1,Gbeta2,Dbeta1,Dbeta2,batch_size, hidden_nodes_G,hidden_nodes_D):
+    def __init__(self,args):
         """Docstring for init of SVSGan"""
-        self.gen = Generator(N_FFT)
-        self.dis = Discriminator(N_FFT)
-        self.gen_optim = optim.Adam(self.gen.parameters(),lr=lrG,betas=(Gbeta1,Gbeta2))
-        self.dis_optim = optim.Adam(self.dis.parameters(),lr=lrD,betas=(Dbeta1,Dbeta2))
+        self.G = Generator(args)
+        self.D = Discriminator(args)
+        self.gen_optim = optim.Adam(self.G.parameters(),lr=args.lrG,betas=(args.Gbeta1,args.Gbeta2))
+        self.dis_optim = optim.Adam(self.D.parameters(),lr=args.lrD,betas=(args.Dbeta1,args.Dbeta2))
         self.l2 = nn.MSELoss()
         self.bce = nn.BCELoss()
         self.save_dir = "./models/"
-        self.batch_size = batch_size
-        self.real = Variable(torch.ones(batch_size,1))
-        self.fake = Variable(torch.zeros(batch_size,1))
+        self.batch_size = args.batch_size
+        self.real = Variable(torch.ones(args.batch_size,1))
+        self.fake = Variable(torch.zeros(args.batch_size,1))
         self.model_name = "SVSGan"
 
 
