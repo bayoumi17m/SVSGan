@@ -6,7 +6,6 @@ import torch.optim as optim
 from torch.autograd import Variable
 import pickle
 import os
-import utils
 
 class Generator(nn.Module):
     """Docstring for Generator"""
@@ -29,7 +28,7 @@ class Generator(nn.Module):
         x = F.relu(self.bn1(self.fc1(z)))
         x = F.relu(self.bn2(self.fc2(x)))
         x = F.relu(self.bn3(self.fc3(x)))
-        x = F.tanh(self.fc4(x))
+        x = F.sigmoid(self.fc4(x))
 
         # x1 = F.sigmoid(self.fc1(z1))
         # x1 = F.sigmoid(self.fc2(x1))
@@ -39,15 +38,6 @@ class Generator(nn.Module):
         x1 = 1 - x # Take probabilities and subtract out the probabilities for human voice
 
         return (x / (x + x1 + np.finfo(float).eps)) * z # Time Masking Function
-
-
-
-    def save(self):
-        """Docstring for saving"""
-
-
-    def load(self):
-            """Docstring for loading"""
 
 
 class Discriminator(nn.Module):
@@ -72,34 +62,6 @@ class Discriminator(nn.Module):
         x = F.sigmoid(self.fc4(x))
 
         return x
-    #     self.fc1 = Linear(in_size,hidden_nodes_D)
-    #     self.fc2 = Linear(hidden_nodes_D,hidden_nodes_D)
-    #     self.fc3 = Linear(hidden_nodes_D,hidden_nodes_D)
-    #     self.fc4 = Linear(hidden_nodes_D,1)
-        
-    #     self.bn1 = nn.BatchNorm(batch_size)
-    #     self.bn2 = nn.BatchNorm(batch_size)
-    #     self.bn3 = nn.BatchNorm(batch_size)
-    #     self.bn4 = nn.BatchNorm(batch_size)
-
-
-
-    # def forward(self,z):
-    #     """Docstring for forward function"""
-    #     x = F.relu(self.bn1(self.fc1(z)))
-    #     x = F.relu(self.bn2(self.fc2(x)))
-    #     x = F.relu(self.bn3(self.fc3(x)))
-    #     x = F.sigmoid(self.bn4(self.fc4(x)))
-    #     return x
-
-
-
-    def save(self):
-        """Docstring for saving"""
-
-
-    def load(self):
-            """Docstring for loading"""
 
 
 class SVSGan(object):
