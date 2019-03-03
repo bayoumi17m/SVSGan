@@ -5,9 +5,12 @@ from torch.utils.data import Dataset, DataLoader
 from random import choice
 import numpy as np
 import scipy
+from scipy import signal
+import scipy.io.wavfile
 
-def get_args():
-    import argparse
+import argparse
+
+def parse_arguments_Model():
     parser = argparse.ArgumentParser()
     #parser.add_argument('--dataset', type=str, default='mnist', help='Load a previous dataset')
     parser.add_argument('--dataroot', type=str, default='./data/', help='path to dataset')
@@ -25,13 +28,36 @@ def get_args():
     parser.add_argument('--cuda', action='store_true', help='enables cuda')
     parser.add_argument('--seed', default=100, type=int, help='Random seed.')
     parser.add_argument('--load', action="store_true", help='load dataset')
-    parser.add_argument('--ngf', type=int, default=1024, help='number of features in generator')
-    parser.add_argument('--ndf', type=int, default=513, help='number of features in discriminator')
-    parser.add_argument('--N_FFT', type=int, default=513, help='size of the input spectra of the generator')
-    parser.add_argument('--inD', type=int, default=1539, help='size of the input features of the discriminator')
+    parser.add_argument('--train', action="store_true", default=True, help='Training mode')
     args = parser.parse_args()
 
     return args
+
+def parse_arguments_Data():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--dataroot', type=str, default='./data/', help='path to dataset')
+    parser.add_argument('--store_data', type=str, default='./data/', help='path to dataset')
+    args = parser.parse_args()
+
+    return args
+
+def DataSetCleaner(args):
+    for filename in os.listdir(args.dataroot):
+        if filename.endswith(".wav"):
+            rate, data = scipy.io.wavfile.read(os.path.join(args.dataroot,filename))
+            f, t, Sxx = signal.stft(data,rate,nperseg=1000)
+            magnitude = np.abs(Sxx)
+            phase = np.unwrap(np.angle(Sxx),axis=-2)
+            np.save("./Data/rate_"+ filename[:-4],rate)
+            np.save("./Data/freq_"+ filename[:-4],f)
+            np.save("./Data/time_"+ filename[:-4],t)
+            np.save("./Data/magdnitude_"+ filename[:-4],magnitude)
+            np.save("./Data/phase_"+ filename[:-4],phase)
+
+def reConstructSound(filename,magnitude,phase,fs):
+    Zxx = magnitude * np.exp(1j * phase)
+    t2, xrec = signal.istft(Zxx, fs)
+    scipy.io.wavfile.write(filename,fs,xrec)
 
 class DSD100Dataset(Dataset):
     """DOcstring for DSD100 Dataset"""
@@ -44,10 +70,11 @@ class DSD100Dataset(Dataset):
         for filename in os.listdir(root_dir):
             if filename.endswith(".wav"):
                 rate, data = scipy.io.wavefile.read(filename)
-                f, t, Sxx = scipy.signal.spectrogram(data,rate,mode="magnitude")
-                fa, ta, Sxxa = scipy.signal.spectrogram(data,rate,mode="angle")
+                f, t, Sxx = scipy.signal.stft(data,rate)
+                magnitude = np.abs(Sxx)
+                phase = np.unwrap(np.angle(Sxx),axis=-2)
+                # Invert the output with the following: scipy.signal.istft(Zxx,rate)
 
-                self.data[i] = ((f,t,fa,ta,Sxxa),(rate,Sxx))
 
             else:
                 pass
