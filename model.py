@@ -88,14 +88,28 @@ class SVSGan(object):
         if not os.path.exists(save_dir):
             os.makedirs(save_dir)
 
-        torch.save(self.G.state_dict(), os.path.join(save_dir, self.model_name + '_G.pkl'))
-        torch.save(self.D.state_dict(), os.path.join(save_dir, self.model_name + '_D.pkl'))
+        g_state = {
+            'gnet' : self.G.state_dict(),
+            'gopt' : self.gen_optim.state_dict()
+        }
+        d_state = {
+            'dnet' : self.D.state_dict(),
+            'dopt' : self.dis_optim.state_dict()
+        }
+
+        torch.save(g_state, os.path.join(save_dir, self.model_name + '_G.pkl'))
+        torch.save(d_state, os.path.join(save_dir, self.model_name + '_D.pkl'))
 
 
-    def load(self):
-        save_dir = os.path.join(self.save_dir, self.dataset, self.model_name)
+    def load_G(self, G_checkpoint):
+        checkpoint = torch.load(G_checkpoint)
+        self.G.load_state_dict(checkpoint['gnet'])
+        self.gen_optim.load_state_dict(checkpoint['gopt'])
 
-        self.G.load_state_dict(torch.load(os.path.join(save_dir, self.model_name + '_G.pkl')))
-        self.D.load_state_dict(torch.load(os.path.join(save_dir, self.model_name + '_D.pkl')))
+    def load_D( self, D_checkpoint):
+        checkpoint = torch.load(D_checkpoint)
+        self.D.load_state_dict(checkpoint['dnet'])
+        self.dis_optim.load_state_dict(checkpoint['gopt'])
+
 
 

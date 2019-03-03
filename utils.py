@@ -16,6 +16,8 @@ def get_args():
     parser.add_argument('--dataroot', type=str, default='./data/', help='path to dataset')
     parser.add_argument('--store_data', type=str, default='./data/', help='path to dataset')
     parser.add_argument('--resume', type=str, default=None, help='File to resume')
+    parser.add_argument('--resume_G', type=str, default=None, help='File to resume')
+    parser.add_argument('--resume_D', type=str, default=None, help='File to resume')
     parser.add_argument('--workers', type=int, help='number of data loading workers', default=4)
 
     parser.add_argument('--batch_size', type=int, default=128, help='input batch size')
