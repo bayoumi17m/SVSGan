@@ -47,22 +47,22 @@ def get_args():
     return args
 
 
-def DataSetCleaner(args):
-    for filename in os.listdir(args.dataroot):
+def DataSetCleaner(dataroot,store_data):
+    for filename in os.listdir(dataroot):
         if filename.endswith(".wav"):
             try:
-                os.mkdirs(filename[:-4])
+                os.mkdir(os.path.join(store_data,filename[:-4]))
             except:
                 pass
-            rate, data = scipy.io.wavfile.read(os.path.join(args.dataroot,filename))
+            rate, data = scipy.io.wavfile.read(os.path.join(dataroot,filename))
             f, t, Sxx = signal.stft(data,rate,nperseg=1000)
             magnitude = np.abs(Sxx)
             phase = np.unwrap(np.angle(Sxx),axis=-2)
-            np.save(os.path.join(os.path.join(args.store_data,filename),"rate_"+ filename[:-4]),rate)
-            np.save(os.path.join(os.path.join(args.store_data,filename),"freq_"+ filename[:-4]),f)
-            np.save(os.path.join(os.path.join(args.store_data,filename),"time_"+ filename[:-4]),t)
-            np.save(os.path.join(os.path.join(args.store_data,filename),"magnitude_"+ filename[:-4]),magnitude)
-            np.save(os.path.join(os.path.join(args.store_data,filename),"phase_"+ filename[:-4]),phase)
+            np.save(os.path.join(os.path.join(store_data,filename[:-4]),"rate_"+ filename[:-4]),rate)
+            np.save(os.path.join(os.path.join(store_data,filename[:-4]),"freq_"+ filename[:-4]),f)
+            np.save(os.path.join(os.path.join(store_data,filename[:-4]),"time_"+ filename[:-4]),t)
+            np.save(os.path.join(os.path.join(store_data,filename[:-4]),"magnitude_"+ filename[:-4]),magnitude)
+            np.save(os.path.join(os.path.join(store_data,filename[:-4]),"phase_"+ filename[:-4]),phase)
 
 def reConstructSound(filename,magnitude,phase,fs):
     Zxx = magnitude * np.exp(1j * phase)
