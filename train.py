@@ -8,15 +8,16 @@ import pickle
 import os
 import utils
 
-def tf_masking(predicted_source, in_mixture):
-    return predicted_source * in_mixture
+def tf_masking(source, in_mixture):
+    return source * in_mixture
 
 
 def initialize_training(model,vocal_true,bgm_true,in_mixture):
     model.gen_optim.zero_grad()
-    predicted_source = model.G(in_mixture)
-    vocal_fake = tf_masking(predicted_source, in_mixture)
-    bgm_fake = torch.ones_like(vocal_fake) - vocal_fake
+    y1 = model.G(in_mixture)
+    y2 = torch.ones_like(y1) - y1
+    vocal_fake = tf_masking(y1, in_mixture)
+    bgm_fake = tf_masking(y2, in_mixture)
 
     G_loss = model.l2(vocal_true, vocal_fake) + model.l2(bgm_true, bgm_fake)
     G_loss.backward()
@@ -25,9 +26,10 @@ def initialize_training(model,vocal_true,bgm_true,in_mixture):
 
 def gan_training(model,vocal_true,bgm_true,in_mixture):
     model.dis_optim.zero_grad()
-    predicted_source = model.G(in_mixture)
-    vocal_fake = tf_masking(predicted_source, in_mixture)
-    bgm_fake = torch.ones_like(vocal_fake) - vocal_fake
+    y1 = model.G(in_mixture)
+    y2 = torch.ones_like(y1) - y1
+    vocal_fake = tf_masking(y1, in_mixture)
+    bgm_fake = tf_masking(y2, in_mixture)
     
     D_real = model.D(vocal_true, bgm_true, in_mixture)
     D_real_loss = model.bce(D_real, model.real)
@@ -40,9 +42,10 @@ def gan_training(model,vocal_true,bgm_true,in_mixture):
     model.dis_optim.step()
 
     model.gen_optim.zero_grad()
-    predicted_source = model.G(in_mixture)
-    vocal_fake = tf_masking(predicted_source, in_mixture)
-    bgm_fake = torch.ones_like(vocal_fake) - vocal_fake
+    y1 = model.G(in_mixture)
+    y2 = torch.ones_like(y1) - y1
+    vocal_fake = tf_masking(y1, in_mixture)
+    bgm_fake = tf_masking(y2, in_mixture)
 
     D_fake = model.D(vocal_fake, bgm_fake, in_mixture)
     G_loss = model.bce(D_fake, model.real)
