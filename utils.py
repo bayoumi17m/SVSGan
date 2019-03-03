@@ -48,11 +48,11 @@ def DataSetCleaner(args):
             f, t, Sxx = signal.stft(data,rate,nperseg=1000)
             magnitude = np.abs(Sxx)
             phase = np.unwrap(np.angle(Sxx),axis=-2)
-            np.save("./Data/rate_"+ filename[:-4],rate)
-            np.save("./Data/freq_"+ filename[:-4],f)
-            np.save("./Data/time_"+ filename[:-4],t)
-            np.save("./Data/magdnitude_"+ filename[:-4],magnitude)
-            np.save("./Data/phase_"+ filename[:-4],phase)
+            np.save(os.path.join(args.store_data,"rate_"+ filename[:-4]),rate)
+            np.save(os.path.join(args.store_data,"freq_"+ filename[:-4]),f)
+            np.save(os.path.join(args.store_data,"time_"+ filename[:-4]),t)
+            np.save(os.path.join(args.store_data,"magdnitude_"+ filename[:-4]),magnitude)
+            np.save(os.path.join(args.store_data,"phase_"+ filename[:-4]),phase)
 
 def reConstructSound(filename,magnitude,phase,fs):
     Zxx = magnitude * np.exp(1j * phase)
