@@ -7,9 +7,12 @@ import model
 import torch.nn.functional as F
 import torch.optim as optim
 from pprint import pprint
+from tensorboardX import SummaryWriter
+import os
 
 
 def step(model, opt, data, step, writer, args):
+    print(data)
     mixture, vocal, noise = data
 
     mix_spec = mixture['magnitude']
@@ -90,7 +93,7 @@ if __name__ == "__main__":
     args = utils.get_args()
 
     # Models and optimizers
-    model = Generator(args)
+    model = model.Generator(args)
     if args.cuda:
         model.cuda()
     opt = optim.Adam(model.parameters(), lr=args.lrG, betas=(args.Gbeta1,args.Gbeta2))
@@ -101,7 +104,8 @@ if __name__ == "__main__":
 
 
     # Data loaders
-    tr_loader, val_loader, test_loader = utils.get_loader(args)
+    loaders = utils.get_loader(args)
+    tr_loader, val_loader, test_loader = loaders['train'], loaders['val'], loaders['test']
 
     # Writer, and save directory
     ts = int(time.time())
@@ -112,14 +116,14 @@ if __name__ == "__main__":
 
     writer = SummaryWriter(log_dir=os.path.join("runs", "pretrain", args.log_dir))
     save_dir =  os.path.join("checkponts", "pretrain", args.log_dir)
-    os.makedir(save_dir, exist_ok=True)
+    os.makedirs(save_dir, exist_ok=True)
 
     start_epoch = 0
     for epoch_idx in range(args.epochs):
         epoch = start_epoch + epoch_idx
         for b_idx, data in tqdm.tqdm(enumerate(tr_loader)):
-            step = epoch_idx * len(tr_loader) + b_idx
-            loss = step(model, opt, data, step)
+            step_num = epoch_idx * len(tr_loader) + b_idx
+            loss = step(model, opt, data, step_num, writer, args)
             if (b_idx + 1) % args.log_step == 0:
                 print("Epoch [% 2d/% 2d] Batch [% 2d/% 2d] Loss %2.5f"\
                       %(epoch, args.epochs, b_idx, len(tr_loader), loss))
@@ -131,4 +135,5 @@ if __name__ == "__main__":
 
         if (epoch_idx + 1) % args.save_freq == 0:
             save(model, opt, save_dir, epoch, args)
+
 

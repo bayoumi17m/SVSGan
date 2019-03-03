@@ -71,57 +71,76 @@ def reConstructSound(filename,magnitude,phase,fs):
     t2, xrec = signal.istft(Zxx, fs)
     scipy.io.wavfile.write(filename,fs,xrec)
 
+
 class DSD100Dataset(Dataset):
     """DOcstring for DSD100 Dataset"""
 
     def __init__(self, root_dir):
         """Docstring for the Dataset object"""
+        super(DSD100Dataset, self).__init__()
         #length = len(list(filter(lambda x: x[-3:] == ".npy", os.listdir("."))))
-        subdirs = [x[0] for x in os.walk(dir)] 
+        subdirs = [x[0] for x in os.walk(root_dir)]
         length = len(subdirs)
-        self.data = np.empty(length)
-        i = 0
-        for song_folder in os.walk(root_dir):
+
+        self.data = []
+
+        print(root_dir)
+        for song in os.listdir(root_dir):
+            if song.startswith("."):
+                continue
             data = ({},{},{})
-            for song_portion in os.listdir(folder[0]):
+            print(song)
+            for song_portion in os.listdir(os.path.join(root_dir, song)):
+                if song_portion.startswith("."):
+                    continue
                 k = -1
-                if fnmatch.fnmatch(song_portion[0],"mixture"):
+                if fnmatch.fnmatch(song_portion,"mixture"):
                     k = 0
-                elif fnmatch.fnmatch(song_portion[0],"vocal"):
+                elif fnmatch.fnmatch(song_portion,"vocal"):
                     k = 1
-                elif fnmatch.fnmatch(song_portion[0],"noise"):
+                elif fnmatch.fnmatch(song_portion, "noise"):
                     k = 2
-                if song_filename.endswith(".npy"):
-                    magnitude = np.load(fnmatch.filter(filename,"magnitude_*")[0])
-                    phase = np.load(fnmatch.filter(filename,"phase_*")[0])
-                    time = np.load(fnmatch.filter(filename,"time_*")[0])
-                    freq = np.load(fnmatch.filter(filename,"freq_*")[0])
-                    rate = np.load(fnmatch.filter(filename,"rate_*")[0])
-                    data[k] = {"magnitude": magnitude, "phase": phase, "time": time,
-                    "freq": freq, "rate": rate}
+                print(k)
 
-            self.data[i] = data
+                for filename in os.listdir(os.path.join(root_dir, song, song_portion)):
+                    print(filename)
+                    print(fnmatch.filter(filename,"magnitude_*"))
+                    prefix = filename.split("_")[0]
+                    print(prefix)
+                    data[k][prefix] = np.load(os.path.join(root_dir, song, song_portion, filename))
+                print({key:v.shape for key,v in data[k].items()})
 
-        def __len__(self):
-            return self.data.shape[0]
+            self.data.append(data)
 
+    def __len__(self):
+        return len(self.data)
 
-        def __getitem__(self, _):
-            return np.random.choice(self.data)
+    def __getitem__(self, idx):
+        # TODO : subsampling
+        data = list(self.data[idx])
+        for i in range(len(data)):
+            data[i] = {k:torch.from_numpy(v) for k,v in data[i].items()}
+
+        import pdb; pdb.set_trace()
+        return tuple(self.data[idx])
 
 
 def get_loader(args):
     train_dataset = DSD100Dataset(args.train_directory)
     val_dataset = DSD100Dataset(args.val_directory)
     test_dataset = DSD100Dataset(args.test_directory)
+
     train_data_loader = torch.utils.data.DataLoader(
-        dataset = dataset, batch_size= args.batch_size, shuffle=True, num_workers=args.workers)
-    
+        dataset = train_dataset, batch_size= args.batch_size,
+        shuffle=False, num_workers=args.workers)
+
     validation_data_loader = torch.utils.data.DataLoader(
-        dataset = val_dataset, batch_size= args.batch_size, shuffle=False, num_workers=args.workers)
-    
+        dataset = val_dataset, batch_size= args.batch_size,
+        shuffle=False, num_workers=args.workers)
+
     test_data_loader = torch.utils.data.DataLoader(
-        dataset = test_dataset, batch_size= args.batch_size, shuffle=False, num_workers=args.workers)
+        dataset = test_dataset, batch_size= args.batch_size,
+        shuffle=False, num_workers=args.workers)
 
     return {"train":train_data_loader, "test": test_data_loader, "val": validation_data_loader}
 
