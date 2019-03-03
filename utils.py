@@ -13,13 +13,17 @@ def get_args():
     parser = argparse.ArgumentParser()
     #parser.add_argument('--dataset', type=str, default='mnist', help='Load a previous dataset')
     parser.add_argument('--dataroot', type=str, default='./data/', help='path to dataset')
-    parser.add_argument('--dataroot', type=str, default='./data/', help='path to dataset')
+    parser.add_argument('--log-dir', type=str, default=None, help='Logging directory (default None)')
     parser.add_argument('--store_data', type=str, default='./data/', help='path to dataset')
     parser.add_argument('--resume', type=str, default=None, help='File to resume')
     parser.add_argument('--resume_G', type=str, default=None, help='File to resume')
     parser.add_argument('--resume_D', type=str, default=None, help='File to resume')
     parser.add_argument('--workers', type=int, help='number of data loading workers', default=4)
 
+    parser.add_argument('--epochs', type=int, default=10, help='Number of epochs to train it.')
+    parser.add_argument('--log-step', type=int, default=10, help='Logging step to the terminal.')
+    parser.add_argument('--save-step', type=int, default=1, help='Number of steps to save it.')
+    parser.add_argument('--val-freq', type=int, default=1, help='Validation frequency (unit: epochs).')
     parser.add_argument('--batch_size', type=int, default=128, help='input batch size')
     parser.add_argument('--lrG', type=float, default=0.001,
             help='learning rate for generator, default=0.001')
