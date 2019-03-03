@@ -30,14 +30,9 @@ class Generator(nn.Module):
         x = F.relu(self.bn3(self.fc3(x)))
         x = F.sigmoid(self.fc4(x))
 
-        # x1 = F.sigmoid(self.fc1(z1))
-        # x1 = F.sigmoid(self.fc2(x1))
-        # x1 = F.sigmoid(self.fc3(x1))
-        # x1 = F.sigmoid(self.fc4(x1))
-
-        x1 = 1 - x # Take probabilities and subtract out the probabilities for human voice
-
-        return (x / (x + x1 + np.finfo(float).eps)) * z # Time Masking Function
+        vocal = x * z
+        noise = (1 - x) * 2
+        return vocal, noise
 
 
 class Discriminator(nn.Module):
@@ -60,7 +55,6 @@ class Discriminator(nn.Module):
         x = F.leaky_relu(self.bn2(self.fc2(x)), 0.2)
         x = F.leaky_relu(self.bn3(self.fc3(x)), 0.2)
         x = F.sigmoid(self.fc4(x))
-
         return x
 
 
@@ -88,14 +82,28 @@ class SVSGan(object):
         if not os.path.exists(save_dir):
             os.makedirs(save_dir)
 
-        torch.save(self.G.state_dict(), os.path.join(save_dir, self.model_name + '_G.pkl'))
-        torch.save(self.D.state_dict(), os.path.join(save_dir, self.model_name + '_D.pkl'))
+        g_state = {
+            'gnet' : self.G.state_dict(),
+            'gopt' : self.gen_optim.state_dict()
+        }
+        d_state = {
+            'dnet' : self.D.state_dict(),
+            'dopt' : self.dis_optim.state_dict()
+        }
+
+        torch.save(g_state, os.path.join(save_dir, self.model_name + '_G.pkl'))
+        torch.save(d_state, os.path.join(save_dir, self.model_name + '_D.pkl'))
 
 
-    def load(self):
-        save_dir = os.path.join(self.save_dir, self.dataset, self.model_name)
+    def load_G(self, G_checkpoint):
+        checkpoint = torch.load(G_checkpoint)
+        self.G.load_state_dict(checkpoint['gnet'])
+        self.gen_optim.load_state_dict(checkpoint['gopt'])
 
-        self.G.load_state_dict(torch.load(os.path.join(save_dir, self.model_name + '_G.pkl')))
-        self.D.load_state_dict(torch.load(os.path.join(save_dir, self.model_name + '_D.pkl')))
+    def load_D( self, D_checkpoint):
+        checkpoint = torch.load(D_checkpoint)
+        self.D.load_state_dict(checkpoint['dnet'])
+        self.dis_optim.load_state_dict(checkpoint['gopt'])
+
 
 
