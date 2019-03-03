@@ -30,14 +30,9 @@ class Generator(nn.Module):
         x = F.relu(self.bn3(self.fc3(x)))
         x = F.sigmoid(self.fc4(x))
 
-        # x1 = F.sigmoid(self.fc1(z1))
-        # x1 = F.sigmoid(self.fc2(x1))
-        # x1 = F.sigmoid(self.fc3(x1))
-        # x1 = F.sigmoid(self.fc4(x1))
-
-        x1 = 1 - x # Take probabilities and subtract out the probabilities for human voice
-
-        return (x / (x + x1 + np.finfo(float).eps)) * z # Time Masking Function
+        vocal = x * z
+        noise = (1 - x) * 2
+        return vocal, noise
 
 
 class Discriminator(nn.Module):
@@ -60,7 +55,6 @@ class Discriminator(nn.Module):
         x = F.leaky_relu(self.bn2(self.fc2(x)), 0.2)
         x = F.leaky_relu(self.bn3(self.fc3(x)), 0.2)
         x = F.sigmoid(self.fc4(x))
-
         return x
 
 
