@@ -13,7 +13,9 @@ def get_args():
     import argparse
     parser = argparse.ArgumentParser()
     #parser.add_argument('--dataset', type=str, default='mnist', help='Load a previous dataset')
-    parser.add_argument('--dataroot', type=str, default='./data/', help='path to dataset')
+    parser.add_argument('--train_directory', type=str, default='./data/', help='path to dataset')
+    parser.add_argument('--val_directory', type=str, default='./data/', help='path to dataset')
+    parser.add_argument('--test_directory', type=str, default='./data/', help='path to dataset')
     parser.add_argument('--log-dir', type=str, default=None, help='Logging directory (default None)')
     parser.add_argument('--store_data', type=str, default='./data/', help='path to dataset')
     parser.add_argument('--resume', type=str, default=None, help='File to resume')
