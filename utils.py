@@ -7,6 +7,7 @@ import numpy as np
 import scipy
 from scipy import signal
 import scipy.io.wavfile
+import fnmatch
 
 def get_args():
     import argparse
@@ -49,15 +50,19 @@ def get_args():
 def DataSetCleaner(args):
     for filename in os.listdir(args.dataroot):
         if filename.endswith(".wav"):
+            try:
+                os.mkdirs(filename[:-4])
+            except:
+                pass
             rate, data = scipy.io.wavfile.read(os.path.join(args.dataroot,filename))
             f, t, Sxx = signal.stft(data,rate,nperseg=1000)
             magnitude = np.abs(Sxx)
             phase = np.unwrap(np.angle(Sxx),axis=-2)
-            np.save(os.path.join(args.store_data,"rate_"+ filename[:-4]),rate)
-            np.save(os.path.join(args.store_data,"freq_"+ filename[:-4]),f)
-            np.save(os.path.join(args.store_data,"time_"+ filename[:-4]),t)
-            np.save(os.path.join(args.store_data,"magdnitude_"+ filename[:-4]),magnitude)
-            np.save(os.path.join(args.store_data,"phase_"+ filename[:-4]),phase)
+            np.save(os.path.join(os.path.join(args.store_data,filename),"rate_"+ filename[:-4]),rate)
+            np.save(os.path.join(os.path.join(args.store_data,filename),"freq_"+ filename[:-4]),f)
+            np.save(os.path.join(os.path.join(args.store_data,filename),"time_"+ filename[:-4]),t)
+            np.save(os.path.join(os.path.join(args.store_data,filename),"magnitude_"+ filename[:-4]),magnitude)
+            np.save(os.path.join(os.path.join(args.store_data,filename),"phase_"+ filename[:-4]),phase)
 
 def reConstructSound(filename,magnitude,phase,fs):
     Zxx = magnitude * np.exp(1j * phase)
@@ -69,20 +74,31 @@ class DSD100Dataset(Dataset):
 
     def __init__(self, root_dir):
         """Docstring for the Dataset object"""
-        length = len(list(filter(lambda x: x[-3:] == ".wav", os.listdir("."))))
+        #length = len(list(filter(lambda x: x[-3:] == ".npy", os.listdir("."))))
+        subdirs = [x[0] for x in os.walk(dir)] 
+        length = len(subdirs)
         self.data = np.empty(length)
         i = 0
-        for filename in os.listdir(root_dir):
-            if filename.endswith(".wav"):
-                rate, data = scipy.io.wavefile.read(filename)
-                f, t, Sxx = scipy.signal.stft(data,rate)
-                magnitude = np.abs(Sxx)
-                phase = np.unwrap(np.angle(Sxx),axis=-2)
-                # Invert the output with the following: scipy.signal.istft(Zxx,rate)
+        for song_folder in os.walk(root_dir):
+            data = ({},{},{})
+            for song_portion in os.listdir(folder[0]):
+                k = -1
+                if fnmatch.fnmatch(song_portion[0],"mixture"):
+                    k = 0
+                elif fnmatch.fnmatch(song_portion[0],"vocal"):
+                    k = 1
+                elif fnmatch.fnmatch(song_portion[0],"noise"):
+                    k = 2
+                if song_filename.endswith(".npy"):
+                    magnitude = np.load(fnmatch.filter(filename,"magnitude_*")[0])
+                    phase = np.load(fnmatch.filter(filename,"phase_*")[0])
+                    time = np.load(fnmatch.filter(filename,"time_*")[0])
+                    freq = np.load(fnmatch.filter(filename,"freq_*")[0])
+                    rate = np.load(fnmatch.filter(filename,"rate_*")[0])
+                    data[k] = {"magnitude": magnitude, "phase": phase, "time": time,
+                    "freq": freq, "rate": rate}
 
-
-            else:
-                pass
+            self.data[i] = data
 
         def __len__(self):
             return self.data.shape[0]
@@ -93,9 +109,17 @@ class DSD100Dataset(Dataset):
 
 
 def get_loader(args):
-    dataset = DSD100Dataset(args.dataroot)
-    data_loader = torch.utils.data.DataLoader(
-        dataset = dataset, batch_size= args.batch_size, shuffle=True,num_workers=args.workers)
+    train_dataset = DSD100Dataset(args.train_directory)
+    val_dataset = DSD100Dataset(args.val_directory)
+    test_dataset = DSD100Dataset(args.test_directory)
+    train_data_loader = torch.utils.data.DataLoader(
+        dataset = dataset, batch_size= args.batch_size, shuffle=True, num_workers=args.workers)
+    
+    validation_data_loader = torch.utils.data.DataLoader(
+        dataset = val_dataset, batch_size= args.batch_size, shuffle=False, num_workers=args.workers)
+    
+    test_data_loader = torch.utils.data.DataLoader(
+        dataset = test_dataset, batch_size= args.batch_size, shuffle=False, num_workers=args.workers)
 
-    return data_loader
+    return {"train":train_data_loader, "test": test_data_loader, "val": validation_data_loader}
 
