@@ -6,47 +6,58 @@ import torch.optim as optim
 from torch.autograd import Variable
 import pickle
 import os
+import utils
+
+def tf_masking(predicted_source, in_mixture):
+    return predicted_source * in_mixture
 
 
-
-def initialize_training(model,in_mixture,separated_source):
+def initialize_training(model,vocal_true,bgm_true,in_mixture):
     model.gen_optim.zero_grad()
-    predicted_source = model.gen(in_mixture)
-    G_loss = model.l2(predicted_source,separated_source)
+    predicted_source = model.G(in_mixture)
+    vocal_fake = tf_masking(predicted_source, in_mixture)
+    bgm_fake = torch.ones_like(vocal_fake) - vocal_fake
+
+    G_loss = model.l2(vocal_true, vocal_fake) + model.l2(bgm_true, bgm_fake)
     G_loss.backward()
     model.gen_optim.step()
 
 
-def gan_training(model,step,in_mixture,separated_source):
+def gan_training(model,vocal_true,bgm_true,in_mixture):
     model.dis_optim.zero_grad()
-    predicted_source = model.gen(in_mixture)
+    predicted_source = model.G(in_mixture)
+    vocal_fake = tf_masking(predicted_source, in_mixture)
+    bgm_fake = torch.ones_like(vocal_fake) - vocal_fake
     
-    D_real = model.dis(separated_source)
-    D_real_loss = model.bce(D_real,model.real)
+    D_real = model.D(vocal_true, bgm_true, in_mixture)
+    D_real_loss = model.bce(D_real, model.real)
 
-    D_fake = model.dis(predicted_source)
-    D_fake_loss = model.bce(D_fake,model.fake)
+    D_fake = model.D(vocal_fake, bgm_fake, in_mixture)
+    D_fake_loss = model.bce(D_fake, model.fake)
 
     D_loss = D_real_loss + D_fake_loss
     D_loss.backward()
     model.dis_optim.step()
 
     model.gen_optim.zero_grad()
-    predicted_source = model.gen(in_mixture)
-    D_fake = model.dis(predicted_source)
-    G_loss = model.bce(D_fake,model.real)
+    predicted_source = model.G(in_mixture)
+    vocal_fake = tf_masking(predicted_source, in_mixture)
+    bgm_fake = torch.ones_like(vocal_fake) - vocal_fake
+
+    D_fake = model.D(vocal_fake, bgm_fake, in_mixture)
+    G_loss = model.bce(D_fake, model.real)
     G_loss.backward()
     model.gen_optim.step()
 
 
-def train_overall(model,step,in_mixture,separated_source):
+def train_overall(model,step,vocal_true,bgm_true,in_mixture):
         """Docstring for training"""
 
-        if step > 1000: # Need intialization Training
-            initialize_training(model,in_mixture,separated_source)
+        if step <= 1000: # Need intialization Training
+            initialize_training(model,vocal_true,bgm_true,in_mixture)
             
         else: # Regualr GAN Training
-            gan_training(model,in_mixture,separated_source)
+            gan_training(model,vocal_true,bgm_true,in_mixture)
 
-        if step%1000 == 0:
+        if step % 1000 == 0:
             model.save()
