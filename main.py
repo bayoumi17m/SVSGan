@@ -7,20 +7,19 @@ from torch.autograd import Variable
 import pickle
 import os
 
-from args import parse_arguments
-import util
+import utils
 from model import SVSGan
 import train
 
 if __name__ == '__main__':
-    args = parse_arguments()
+    args = utils.get_args()
 
     batch_size = args.batch_size;
     # Continue placing other arguments here
 
-    data_loader = util.get_loader(args)
+    data_loader = utils.get_loader(args)
 
-    model = SVSGan(N_FFT,lrG,lrD,Gbeta1,Gbeta2,Dbeta1,Dbeta2,batch_size, hidden_nodes_G,hidden_nodes_D)
+    model = SVSGan(args)
 
     for i in range(args.steps):
         for j in data_loader: 
