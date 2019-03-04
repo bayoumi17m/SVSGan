@@ -119,12 +119,16 @@ class DSD100Dataset(Dataset):
 
     def __getitem__(self, idx):
         # TODO : subsampling
-        data = list(self.data[idx])
-        for i in range(len(data)):
-            data[i] = {k:torch.from_numpy(v) for k,v in data[i].items()}
+        data = {"mixture:" self.data[idx][0], "vocal": self.data[idx][1], "noise": self.data[idx][2]}
+        prefixIdx = ("mixture", "vocal", "noise")
+        length = len(data)
+        sIdx = np.random.randint(0,length- 1 - 10); eIdx = sIdx + 10
+        for i in range(len(prefixIdx)):
+            data[prefixIdx[i]] = {"magnitude": data[prefixIdx[i]]["magnitude"][:, sIdx:eIdx], "phase": data[prefixIdx[i]]["phase"][:, sIdx:eIdx]}
+            
 
-        import pdb; pdb.set_trace()
-        return tuple(self.data[idx])
+        #import pdb; pdb.set_trace()
+        return data
 
 
 def get_loader(args):
