@@ -15,9 +15,12 @@ def step(model, opt, data, step, writer, args):
     #print(data)
     mixture, vocal, noise = data
 
-    mix_spec = mixture['magnitude'].float().cuda()
-    voc_spec = vocal['magnitude'].float().cuda()
-    noi_spec = noise['magnitude'].float().cuda()
+    mix_spec = mixture['magnitude'].float()
+    voc_spec = vocal['magnitude'].float()
+    noi_spec = noise['magnitude'].float()
+
+    if args.cuda:
+        mix_spec, voc_spec, noi_spec = mix_spec.cuda(), voc_spec.cuda(), noi_spec.cuda()
     print(mix_spec.shape)
     vocal_recon, noise_recon = model(mix_spec)
     vocal_recon_loss = F.mse_loss(vocal_recon, voc_spec)
@@ -43,9 +46,11 @@ def validate(model, loader, epoch, writer):
         n = 0
         for data in loader:
             mixture, vocal, noise = data
-            mix_spec = mixture['magnitude'].float().cuda()
-            voc_spec = vocal['magnitude'].float().cuda()
-            noi_spec = noise['magnitude'].float().cuda()
+            mix_spec = mixture['magnitude'].float()
+            voc_spec = vocal['magnitude'].float()
+            noi_spec = noise['magnitude'].float()
+            if args.cuda:
+                mix_spec, voc_spec, noi_spec = mix_spec.cuda(), voc_spec.cuda(), noi_spec.cuda()
             vocal_recon, noise_recon = model(mix_spec)
             noise_recon_loss += F.mse_loss(noise_recon, noi_spec)
             vocal_recon_loss += F.mse_loss(vocal_recon, voc_spec)
@@ -115,7 +120,7 @@ if __name__ == "__main__":
         args.log_dir = "%s-%d"%(args.log_dir, ts)
 
     writer = SummaryWriter(log_dir=os.path.join("runs", "pretrain", args.log_dir))
-    save_dir =  os.path.join("checkponts", "pretrain", args.log_dir)
+    save_dir =  os.path.join("checkpoints", "pretrain", args.log_dir)
     os.makedirs(save_dir, exist_ok=True)
 
     start_epoch = 0
