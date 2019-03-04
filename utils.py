@@ -121,7 +121,7 @@ class DSD100Dataset(Dataset):
         # TODO : subsampling
         data = (self.data[idx][0], self.data[idx][1], self.data[idx][2])
         prefixIdx = ("mixture", "vocal", "noise")
-        length = len(self.data[idx][0]["mixture"])
+        length = len(self.data[idx][0]["magnitude"])
         sIdx = np.random.randint(0,length- 1 - 10); eIdx = sIdx + 10
         for i in range(len(prefixIdx)):
             data[prefixIdx[i]] = {"magnitude": data[prefixIdx[i]]["magnitude"][:, sIdx:eIdx], "phase": data[prefixIdx[i]]["phase"][:, sIdx:eIdx]}
