@@ -54,16 +54,19 @@ class Discriminator(nn.Module):
         self.bn2 = nn.BatchNorm1d(args.ndf)
         self.fc3 = nn.Conv1d(args.ndf, args.ndf,1)
         self.bn3 = nn.BatchNorm1d(args.ndf)
-        self.fc4 = nn.Conv1d(args.ndf, 1, 1)
+        self.fc4 = nn.Conv1d(args.ndf, 1,1)
 
     def forward(self,y1,y2,z):
         """forward function that takes two sources from the generator and the mixture"""
+        y1 = y1.transpose(1,2).contiguous()
+        y2 = y2.transpose(1,2).contiguous()
+        z = z.transpose(1,2).contiguous()
         x = torch.cat([y1, y2, z], 1)
         x = F.leaky_relu(self.fc1(x), 0.2)
         x = F.leaky_relu(self.bn2(self.fc2(x)), 0.2)
         x = F.leaky_relu(self.bn3(self.fc3(x)), 0.2)
         x = F.sigmoid(self.fc4(x))
-        return x
+        return x.transpose(1,2)
 
 
 class SVSGan(object):
@@ -77,15 +80,15 @@ class SVSGan(object):
         self.dis_optim = optim.Adam(self.D.parameters(),lr=args.lrD,betas=(args.Dbeta1,args.Dbeta2))
         self.l2 = nn.MSELoss()
         self.bce = nn.BCELoss()
-        self.save_dir = "./models/"
+        self.save_dir = "./checkpoints/SVSGan"
         self.batch_size = args.batch_size
-        self.real = Variable(torch.ones(args.batch_size,1))
-        self.fake = Variable(torch.zeros(args.batch_size,1))
+        self.real = Variable(torch.ones(args.batch_size,args.sample_length , 1)).cuda()
+        self.fake = Variable(torch.zeros(args.batch_size,args.sample_length, 1)).cuda()
         self.model_name = "SVSGan"
 
 
-    def save(self):
-        save_dir = os.path.join(self.save_dir, self.dataset, self.model_name)
+    def save(self, name):
+        save_dir = self.save_dir
 
         if not os.path.exists(save_dir):
             os.makedirs(save_dir)
@@ -99,8 +102,8 @@ class SVSGan(object):
             'dopt' : self.dis_optim.state_dict()
         }
 
-        torch.save(g_state, os.path.join(save_dir, self.model_name + '_G.pkl'))
-        torch.save(d_state, os.path.join(save_dir, self.model_name + '_D.pkl'))
+        torch.save(g_state, os.path.join(save_dir, name + '_G.pkl'))
+        torch.save(d_state, os.path.join(save_dir, name + '_D.pkl'))
 
 
     def load_G(self, G_checkpoint):
