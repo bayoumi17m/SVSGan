@@ -32,7 +32,7 @@ def get_args():
     parser.add_argument('--batch_size', type=int, default=128, help='input batch size')
     parser.add_argument('--save_freq', type=int, default=1, help='Saving frequency (unit: epochs).')
     parser.add_argument('--lrG', type=float, default=0.001,
-            help='learning rate for generator, default=0.001')
+            help='learning rate for, G_loss generator, default=0.001')
     parser.add_argument('--lrD', type=float, default=0.001,
             help='learning rate for Discriminator, default=0.001')
     parser.add_argument('--Gbeta1', type=float, default=0.5, help='Generator beta1 for adam. default=0.5')
