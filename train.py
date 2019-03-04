@@ -1,4 +1,6 @@
 import numpy as np
+import utils
+from model import SVSGan
 from tensorboardX import SummaryWriter
 import torch
 
@@ -49,16 +51,16 @@ def gan_training(model, step, vocal_real,bgm_real,in_mixture, gp_center, writer)
     model.gen_optim.step()
 
 
-def train_gan(model, data_loader, epochs):
+def train_gan(model, data_loader, epochs, args, writer):
 
     step = 0
     for epoch in range(epochs):
-        for in_mixture_dic, vocal_real_dic, bgm_real_dic in data_loader:
-            vocal_real = vocal_real_dic['magnitude'].cuda()
-            bgm_real = bgm_real_dic['magnitude'].cuda()
-            in_mixture = sin_mixture_dic['magnitude'].cuda()
+        for (in_mixture_dic, vocal_real_dic, bgm_real_dic) in data_loader:
+            vocal_real = vocal_real_dic['magnitude'].float().cuda()
+            bgm_real = bgm_real_dic['magnitude'].float().cuda()
+            in_mixture = in_mixture_dic['magnitude'].float().cuda()
 
-            gan_training(model, step, vocal_real,bgm_real,in_mixture)
+            gan_training(model, step, vocal_real,bgm_real,in_mixture, args.gp_center,  writer)
 
             if step % 1000 == 0:
                 model.save()
@@ -85,7 +87,7 @@ if __name__ == '__main__':
 
 
     writer = SummaryWriter()
-    train_gan(model, data_loader, 10000, writer)
+    train_gan(model, data_loader['train'], 10000, args, writer)
 
 
 

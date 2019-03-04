@@ -12,16 +12,16 @@ import os
 
 
 def step(model, opt, data, step, writer, args):
-    print(data)
+    #print(data)
     mixture, vocal, noise = data
 
-    mix_spec = mixture['magnitude']
-    voc_spec = vocal['magnitude']
-    noi_spec = noise['magnitude']
-
-    vocal_recon, noise_recon = model.G(mix_spec)
+    mix_spec = mixture['magnitude'].float().cuda()
+    voc_spec = vocal['magnitude'].float().cuda()
+    noi_spec = noise['magnitude'].float().cuda()
+    print(mix_spec.shape)
+    vocal_recon, noise_recon = model(mix_spec)
     vocal_recon_loss = F.mse_loss(vocal_recon, voc_spec)
-    noise_recon_loss = F.mse_loss(noise_recon, noi_sepc)
+    noise_recon_loss = F.mse_loss(noise_recon, noi_spec)
     loss = args.vocal_recon_weight * vocal_recon_loss + args.noise_recon_weight * noise_recon_loss
 
     opt.zero_grad()
@@ -38,17 +38,17 @@ def step(model, opt, data, step, writer, args):
 
 def validate(model, loader, epoch, writer):
     with torch.no_grad():
-        vocal_recon_loss_acc = 0.
-        noise_recon_loss_acc = 0.
+        vocal_recon_loss = 0.
+        noise_recon_loss = 0.
         n = 0
         for data in loader:
             mixture, vocal, noise = data
-            mix_spec = mixture['magnitude']
-            voc_spec = vocal['magnitude']
-            noi_spec = noise['magnitude']
-            vocal_recon, noise_recon = model.G(mix_spec)
-            noise_recon_loss_acc += F.mse_loss(noise_recon, noi_sepc)
-            vocal_recon_loss_acc += F.mse_loss(vocal_recon, voc_spec)
+            mix_spec = mixture['magnitude'].float().cuda()
+            voc_spec = vocal['magnitude'].float().cuda()
+            noi_spec = noise['magnitude'].float().cuda()
+            vocal_recon, noise_recon = model(mix_spec)
+            noise_recon_loss += F.mse_loss(noise_recon, noi_spec)
+            vocal_recon_loss += F.mse_loss(vocal_recon, voc_spec)
             n += mix_spec.size(0)
         n = float(n)
         vocal_recon_loss /= n
@@ -75,7 +75,7 @@ def save(model, opt, save_dir, epoch, args):
     }, save_filename)
 
     # Save the most recent
-    save_filename = os.path.join(save_dir, "checkpoint.pt"%epoch)
+    save_filename = os.path.join(save_dir, "checkpoint.pt")
     torch.save({
         'model' : model.state_dict(),
         'opt'   : opt.state_dict()
@@ -130,7 +130,7 @@ if __name__ == "__main__":
 
         if (epoch_idx + 1) % args.val_freq == 0:
             print("Val for epoch idx: %s"%epoch_idx)
-            res = validate(model, loader, epoch, writer)
+            res = validate(model, val_loader, epoch, writer)
             pprint(res)
 
         if (epoch_idx + 1) % args.save_freq == 0:

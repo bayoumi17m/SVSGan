@@ -1,7 +1,7 @@
 import numpy as np
 import torch
 import torch.nn as nn
-import torch.functional as F
+import torch.nn.functional as F
 import torch.optim as optim
 from torch.autograd import Variable
 import pickle
@@ -13,26 +13,33 @@ class Generator(nn.Module):
         super(Generator, self).__init__()
         """Docstring for Init of Generator"""
         # We take in a vector of size 1024?
-        self.fc1 = nn.Linear(args.N_FFT,args.ngf)
+        self.args = args
+        self.fc1 = nn.Conv1d(args.N_FFT,args.ngf,1)
         self.bn1 = nn.BatchNorm1d(args.ngf)
-        self.fc2 = nn.Linear(args.ngf,args.ngf)
+        self.fc2 = nn.Conv1d(args.ngf,args.ngf,1)
         self.bn2 = nn.BatchNorm1d(args.ngf)
-        self.fc3 = nn.Linear(args.ngf,args.ngf)
+        self.fc3 = nn.Conv1d(args.ngf,args.ngf,1)
         self.bn3 = nn.BatchNorm1d(args.ngf)
-        self.fc4 = nn.Linear(args.ngf,args.N_FFT)
+        self.fc4 = nn.Conv1d(args.ngf,args.N_FFT,1)
 
 
     def forward(self,z):
         """Docstring for forward function"""
         #z1 = 1 - z
+        z = z.float().transpose(1,2).contiguous()
+        # x = self.fc1(z)
         x = F.relu(self.bn1(self.fc1(z)))
+        x = F.relu(self.bn1(x))
         x = F.relu(self.bn2(self.fc2(x)))
         x = F.relu(self.bn3(self.fc3(x)))
-        x = F.sigmoid(self.fc4(x))
+        x = torch.sigmoid(self.fc4(x))
 
         # time-frequency masking
         vocal = x * z
         noise = (1 - x) * z
+
+        vocal = vocal.transpose(1,2)
+        noise = noise.transpose(1,2)
         return vocal, noise
 
 
@@ -42,12 +49,12 @@ class Discriminator(nn.Module):
     def __init__(self,args):
         super(Discriminator, self).__init__()
         """Docstring for Init of Discriminator"""
-        self.fc1 = nn.Linear(args.inD, args.ndf)
-        self.fc2 = nn.Linear(args.ndf, args.ndf)
+        self.fc1 = nn.Conv1d(args.inD, args.ndf,1)
+        self.fc2 = nn.Conv1d(args.ndf, args.ndf,1)
         self.bn2 = nn.BatchNorm1d(args.ndf)
-        self.fc3 = nn.Linear(args.ndf, args.ndf)
+        self.fc3 = nn.Conv1d(args.ndf, args.ndf,1)
         self.bn3 = nn.BatchNorm1d(args.ndf)
-        self.fc4 = nn.Linear(args.ndf, 1)
+        self.fc4 = nn.Conv1d(args.ndf, 1, 1)
 
     def forward(self,y1,y2,z):
         """forward function that takes two sources from the generator and the mixture"""
@@ -64,8 +71,8 @@ class SVSGan(object):
 
     def __init__(self,args):
         """Docstring for init of SVSGan"""
-        self.G = Generator(args)
-        self.D = Discriminator(args)
+        self.G = Generator(args).cuda()
+        self.D = Discriminator(args).cuda()
         self.gen_optim = optim.Adam(self.G.parameters(),lr=args.lrG,betas=(args.Gbeta1,args.Gbeta2))
         self.dis_optim = optim.Adam(self.D.parameters(),lr=args.lrD,betas=(args.Dbeta1,args.Dbeta2))
         self.l2 = nn.MSELoss()

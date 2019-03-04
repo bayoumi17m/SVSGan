@@ -28,8 +28,9 @@ def get_args():
     parser.add_argument('--epochs', type=int, default=10, help='Number of epochs to train it.')
     parser.add_argument('--log-step', type=int, default=10, help='Logging step to the terminal.')
     parser.add_argument('--save-step', type=int, default=1, help='Number of steps to save it.')
-    parser.add_argument('--val-freq', type=int, default=1, help='Validation frequency (unit: epochs).')
+    parser.add_argument('--val_freq', type=int, default=1, help='Validation frequency (unit: epochs).')
     parser.add_argument('--batch_size', type=int, default=128, help='input batch size')
+    parser.add_argument('--save_freq', type=int, default=1, help='Saving frequency (unit: epochs).')
     parser.add_argument('--lrG', type=float, default=0.001,
             help='learning rate for generator, default=0.001')
     parser.add_argument('--lrD', type=float, default=0.001,
@@ -38,12 +39,15 @@ def get_args():
     parser.add_argument('--Gbeta2', type=float, default=0.999, help='Generator beta2 for adam. default=0.999')
     parser.add_argument('--Dbeta1', type=float, default=0.5, help='Discriminator beta1 for adam. default=0.5')
     parser.add_argument('--Dbeta2', type=float, default=0.999, help='Discriminator beta2 for adam. default=0.999')
-    parser.add_argument('--cuda', action='store_true', help='enables cuda')
+    parser.add_argument('--cuda', default=True, action='store_true', help='enables cuda')
     parser.add_argument('--seed', default=100, type=int, help='Random seed.')
     parser.add_argument('--load', action="store_true", help='load dataset')
     parser.add_argument('--ngf', type=int, default=1024, help='number of features in generator')
     parser.add_argument('--ndf', type=int, default=513, help='number of features in discriminator')
-    parser.add_argument('--N_FFT', type=int, default=513, help='size of the input spectra of the generator')
+    parser.add_argument('--N_FFT', type=int, default=501, help='size of the input spectra of the generator')
+    parser.add_argument('--vocal_recon_weight', type=float, default=0.6, help='vocal reconstruction loss weight')
+    parser.add_argument('--noise_recon_weight', type=float, default=0.4, help='noise reconstruction loss weight')
+    parser.add_argument('--gp_center', type=float, default=0., help='gradient penalty center')
     parser.add_argument('--inD', type=int, default=1539, help='size of the input features of the discriminator')
     parser.add_argument('--train', action="store_true", default=True, help='Training mode')
     args = parser.parse_args()
@@ -86,12 +90,12 @@ class DSD100Dataset(Dataset):
 
         self.data = []
 
-        print(root_dir)
+        #print(root_dir)
         for song in os.listdir(root_dir):
             if song.startswith("."):
                 continue
             data = ({},{},{})
-            print(song)
+            #print(song)
             for song_portion in os.listdir(os.path.join(root_dir, song)):
                 if song_portion.startswith("."):
                     continue
@@ -102,15 +106,15 @@ class DSD100Dataset(Dataset):
                     k = 1
                 elif fnmatch.fnmatch(song_portion, "noise"):
                     k = 2
-                print(k)
+                #print(k)
 
                 for filename in os.listdir(os.path.join(root_dir, song, song_portion)):
-                    print(filename)
-                    print(fnmatch.filter(filename,"magnitude_*"))
+                    #print(filename)
+                    #print(fnmatch.filter(filename,"magnitude_*"))
                     prefix = filename.split("_")[0]
-                    print(prefix)
+                    #print(prefix)
                     data[k][prefix] = np.load(os.path.join(root_dir, song, song_portion, filename))
-                print({key:v.shape for key,v in data[k].items()})
+                #print({key:v.shape for key,v in data[k].items()})
 
             self.data.append(data)
 
