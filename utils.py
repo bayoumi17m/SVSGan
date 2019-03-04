@@ -124,7 +124,7 @@ class DSD100Dataset(Dataset):
         length = len(self.data[idx][0]["magnitude"])
         sIdx = np.random.randint(0,length- 1 - 10); eIdx = sIdx + 10
         for i in range(len(prefixIdx)):
-            data[prefixIdx[i]] = {"magnitude": data[prefixIdx[i]]["magnitude"][:, sIdx:eIdx], "phase": data[prefixIdx[i]]["phase"][:, sIdx:eIdx]}
+            data[i] = {"magnitude": data[i]["magnitude"][:, sIdx:eIdx], "phase": data[i]["phase"][:, sIdx:eIdx]}
             
 
         #import pdb; pdb.set_trace()
