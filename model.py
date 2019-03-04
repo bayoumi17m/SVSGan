@@ -30,8 +30,9 @@ class Generator(nn.Module):
         x = F.relu(self.bn3(self.fc3(x)))
         x = F.sigmoid(self.fc4(x))
 
+        # time-frequency masking
         vocal = x * z
-        noise = (1 - x) * 2
+        noise = (1 - x) * z
         return vocal, noise
 
 

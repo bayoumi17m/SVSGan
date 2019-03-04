@@ -22,16 +22,10 @@ def _gradient_penalty_centered_(self, c_real, gp_weight, center=0.):
     return gp_weight * ((gradients_norm - center) ** 2).mean()
 
 
-def tf_masking(source, in_mixture):
-    return source * in_mixture
-
-
 def gan_training(model, step, vocal_real,bgm_real,in_mixture, gp_center, writer):
     model.dis_optim.zero_grad()
-    y1 = model.G(in_mixture)
-    y2 = torch.ones_like(y1) - y1
-    vocal_fake = tf_masking(y1, in_mixture)
-    bgm_fake = tf_masking(y2, in_mixture)
+
+    vocal_fake, bgm_fake = model.G(in_mixture)
 
     D_real = model.D(vocal_real, bgm_real, in_mixture)
     D_real_loss = model.bce(D_real, model.real)
@@ -46,10 +40,7 @@ def gan_training(model, step, vocal_real,bgm_real,in_mixture, gp_center, writer)
     model.dis_optim.step()
 
     model.gen_optim.zero_grad()
-    y1 = model.G(in_mixture)
-    y2 = torch.ones_like(y1) - y1
-    vocal_fake = tf_masking(y1, in_mixture)
-    bgm_fake = tf_masking(y2, in_mixture)
+    vocal_fake, bgm_fake = model.G(in_mixture)
 
     D_fake = model.D(vocal_fake, bgm_fake, in_mixture)
     G_loss = model.bce(D_fake, model.real)
