@@ -122,10 +122,9 @@ class DSD100Dataset(Dataset):
         data = [self.data[idx][0], self.data[idx][1], self.data[idx][2]]
         prefixIdx = ("mixture", "vocal", "noise")
         length = len(self.data[idx][0]["magnitude"])
-        sIdx = np.random.randint(0,length- 1 - 10); eIdx = sIdx + 10
+        sIdx = np.random.randint(0,length- 1 - 200); eIdx = sIdx + 200
         for i in range(len(prefixIdx)):
-            data[i] = {"magnitude": data[i]["magnitude"][:, sIdx:eIdx], "phase": data[i]["phase"][:, sIdx:eIdx]}
-            
+            data[i] = {"magnitude": data[i]["magnitude"][:, sIdx:eIdx].T, "phase": data[i]["phase"][:, sIdx:eIdx].T}
 
         #import pdb; pdb.set_trace()
         return tuple(data)
