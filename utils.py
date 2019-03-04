@@ -173,27 +173,23 @@ def get_DSD_files(subset):
 
     return mixtures_list, sources_list
 
-def get_train_np(devs):
-    mix_train = [np.array(read(os.path.join(dev, "mixture.wav"))[1], dtype=float)  for dev in devs[0]]
-    vocals_train = [np.array(read(os.path.join(dev, "vocals.wav"))[1], dtype=float)  for dev in devs[1]]
-    bgm_train = []
-    for dev in devs[1]:
-        bass = AudioSegment.from_wav(os.path.join(dev, "bass.wav"))
-        drums = AudioSegment.from_wav(os.path.join(dev, "drums.wav"))
-        other = AudioSegment.from_wav(os.path.join(dev, "other.wav"))
+def DSD2np(files):
+    mix = np.asarray([np.array(read(os.path.join(file, "mixture.wav"))[1], dtype=float)  for file in files[0]])
+    vocals = np.asarray([np.array(read(os.path.join(file, "vocals.wav"))[1], dtype=float)  for file in files[1]])
+    bgms = []
+    for file in files[1]:
+        bass = AudioSegment.from_wav(os.path.join(file, "bass.wav"))
+        drums = AudioSegment.from_wav(os.path.join(file, "drums.wav"))
+        other = AudioSegment.from_wav(os.path.join(file, "other.wav"))
         bgm = bass.overlay(drums.overlay(other))
-        bgm_train.append(np.array(bgm.get_array_of_samples(), dtype=float))
-    return mix_train, vocals_train, bgm_train
+        bgms.append(np.array(bgm.get_array_of_samples(), dtype=float))
+    bgms = np.asarray(bgms)
+    return mix, vocals, bgms
 
 
-def get_test_np(tests):
-    mix_test = [np.array(read(os.path.join(test, "mixture.wav"))[1], dtype=float) for test in tests[0]]
-    vocals_test = [np.array(read(os.path.join(test, "vocals.wav"))[1], dtype=float)  for test in tests[1]]
-    bgm_test = []
-    for test in tests[1]:
-        bass = AudioSegment.from_wav(os.path.join(test, "bass.wav"))
-        drums = AudioSegment.from_wav(os.path.join(test, "drums.wav"))
-        other = AudioSegment.from_wav(os.path.join(test, "other.wav"))
-        bgm = bass.overlay(drums.overlay(other))
-        bgm_test.append(np.array(bgm.get_array_of_samples(), dtype=float))
-    return mix_test, vocals_test, bgm_test
+def get_train_test():
+    mix_train, vocals_trian, bgm_train = DSD2np(get_DSD_files('training'))
+    mix_test, vocals_test, bgm_test = DSD2np(get_DSD_files('testing'))
+    return mix_train, vocals_trian, bgm_train, mix_test, vocals_test, bgm_test
+
+
