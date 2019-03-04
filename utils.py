@@ -119,7 +119,7 @@ class DSD100Dataset(Dataset):
 
     def __getitem__(self, idx):
         # TODO : subsampling
-        data = {"mixture:" self.data[idx][0], "vocal": self.data[idx][1], "noise": self.data[idx][2]}
+        data = (self.data[idx][0], self.data[idx][1], self.data[idx][2])
         prefixIdx = ("mixture", "vocal", "noise")
         length = len(data)
         sIdx = np.random.randint(0,length- 1 - 10); eIdx = sIdx + 10
