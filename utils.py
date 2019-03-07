@@ -16,7 +16,7 @@ def get_args():
     parser = argparse.ArgumentParser()
     #parser.add_argument('--dataset', type=str, default='mnist', help='Load a previous dataset')
     parser.add_argument('--train_directory', type=str, default='./data/', help='path to dataset')
-    parser.add_argument('--val_directory', type=str, default='./data/', help='path to dataset')
+    parser.add_argument('--val_directory', type=str, default=None, help='path to dataset')
     parser.add_argument('--test_directory', type=str, default='./data/', help='path to dataset')
     parser.add_argument('--log-dir', type=str, default=None, help='Logging directory (default None)')
     parser.add_argument('--store_data', type=str, default='./data/', help='path to dataset')
@@ -56,23 +56,67 @@ def get_args():
 
     return args
 
+def prepData(store_data,stype,filename,data,rate):
+    try:
+        os.mkdir(os.path.join(store_data,filename))
+    except:
+        pass
+    try:
+        os.mkdir(os.path.join(store_data,filename))
+    except:
+        pass
+    try:
+        os.mkdir(os.path.join(os.path.join(store_data,filename),stype))
+    except:
+        pass
+    path = os.path.join(os.path.join(store_data,filename),stype)
+    # print(os.path.join(store_data,filename))
+    f, t, Sxx = signal.stft(data,rate,nperseg=1000)
+    magnitude = np.abs(Sxx)
+    phase = np.unwrap(np.angle(Sxx),axis=-2)
+    np.save(os.path.join(path,"rate_"+ filename),rate)
+    np.save(os.path.join(path,"freq_"+ filename),f)
+    np.save(os.path.join(path,"time_"+ filename),t)
+    np.save(os.path.join(path,"magnitude_"+ filename),magnitude)
+    np.save(os.path.join(path,"phase_"+ filename),phase)
 
-def DataSetCleaner(dataroot,store_data):
-    for filename in os.listdir(dataroot):
-        if filename.endswith(".wav"):
-            try:
-                os.mkdir(os.path.join(store_data,filename[:-4]))
-            except:
-                pass
-            rate, data = scipy.io.wavfile.read(os.path.join(dataroot,filename))
-            f, t, Sxx = signal.stft(data,rate,nperseg=1000)
-            magnitude = np.abs(Sxx)
-            phase = np.unwrap(np.angle(Sxx),axis=-2)
-            np.save(os.path.join(os.path.join(store_data,filename[:-4]),"rate_"+ filename[:-4]),rate)
-            np.save(os.path.join(os.path.join(store_data,filename[:-4]),"freq_"+ filename[:-4]),f)
-            np.save(os.path.join(os.path.join(store_data,filename[:-4]),"time_"+ filename[:-4]),t)
-            np.save(os.path.join(os.path.join(store_data,filename[:-4]),"magnitude_"+ filename[:-4]),magnitude)
-            np.save(os.path.join(os.path.join(store_data,filename[:-4]),"phase_"+ filename[:-4]),phase)
+
+def DataSetCleaner(dataroot,store_data,args):
+    mixtures_list_train, sources_list_train, mixtures_list_test, sources_list_test, mix_train, \
+        vocals_train, bgm_train, mix_test, vocals_test, bgm_test = get_train_test(args)
+    rate = args.rate
+    i = 0
+    for file_name in mixtures_list_train:
+        #rate, data = scipy.io.wavfile.read(os.path.join(dataroot,filename))
+        _, song_name = os.path.split(file_name)
+        print(mix_train.shape)
+        try:
+            os.mkdir(os.path.join(store_data,"train"))
+        except:
+            pass
+        prepData(os.path.join(store_data, "train"),"mixture",song_name,mix_train[i],rate)
+        prepData(os.path.join(store_data, "train"),"vocals",song_name,vocals_train[i],rate)
+        prepData(os.path.join(store_data, "train"),"noise",song_name,bgm_train[i],rate)
+        i += 1
+        # f, t, Sxx = signal.stft(data,rate,nperseg=1000)
+        # magnitude = np.abs(Sxx)
+        # phase = np.unwrap(np.angle(Sxx),axis=-2)
+        # np.save(os.path.join(os.path.join(store_data,filename[:-4]),"rate_"+ filename[:-4]),rate)
+        # np.save(os.path.join(os.path.join(store_data,filename[:-4]),"freq_"+ filename[:-4]),f)
+        # np.save(os.path.join(os.path.join(store_data,filename[:-4]),"time_"+ filename[:-4]),t)
+        # np.save(os.path.join(os.path.join(store_data,filename[:-4]),"magnitude_"+ filename[:-4]),magnitude)
+        # np.save(os.path.join(os.path.join(store_data,filename[:-4]),"phase_"+ filename[:-4]),phase)
+    try:
+        os.mkdir(os.path.join(store_data,"test"))
+    except:
+        pass
+    i = 0
+    for file_name in mixtures_list_test:
+        _, song_name = os.path.split(file_name)
+        prepData(os.path.join(store_data, "test"),"mixture",song_name,mix_test[i],rate)
+        prepData(os.path.join(store_data, "test"),"vocals",song_name,vocals_test[i],rate)
+        prepData(os.path.join(store_data, "test"),"noise",song_name,bgm_test[i],rate)
+        i += 1
 
 def reConstructSound(filename,magnitude,phase,fs):
     Zxx = magnitude * np.exp(1j * phase)
@@ -83,7 +127,7 @@ def reConstructSound(filename,magnitude,phase,fs):
 class DSD100Dataset(Dataset):
     """DOcstring for DSD100 Dataset"""
 
-    def __init__(self, root_dir):
+    def __init__(self, root_dir,args):
         """Docstring for the Dataset object"""
         super(DSD100Dataset, self).__init__()
         #length = len(list(filter(lambda x: x[-3:] == ".npy", os.listdir("."))))
@@ -91,6 +135,7 @@ class DSD100Dataset(Dataset):
         length = len(subdirs)
 
         self.data = []
+        self.sample_length = args.sample_length
 
         #print(root_dir)
         for song in os.listdir(root_dir):
@@ -128,7 +173,7 @@ class DSD100Dataset(Dataset):
         data = [self.data[idx][0], self.data[idx][1], self.data[idx][2]]
         prefixIdx = ("mixture", "vocal", "noise")
         length = len(self.data[idx][0]["magnitude"])
-        sIdx = np.random.randint(0,length- 1 - 200); eIdx = sIdx + 200
+        sIdx = np.random.randint(0,length- 1 - self.sample_length); eIdx = sIdx + 200
         for i in range(len(prefixIdx)):
             data[i] = {"magnitude": data[i]["magnitude"][:, sIdx:eIdx].T, "phase": data[i]["phase"][:, sIdx:eIdx].T}
 
@@ -156,13 +201,7 @@ def get_loader(args):
     return {"train":train_data_loader, "test": test_data_loader, "val": validation_data_loader}
 
 
-dataset_paths = {
-    'mixtures': os.path.join('DSD100DatasetPath', 'Mixtures'),
-    'sources': os.path.join('DSD100DatasetPath', 'Sources')
-}
-
-
-def get_DSD_files(subset):
+def get_DSD_files(subset,dataset_paths):
     """Getting the files lists.
 
     :param subset: The subset that we are interested in (i.e. training or testing).
@@ -183,22 +222,29 @@ def get_DSD_files(subset):
     return mixtures_list, sources_list
 
 def DSD2np(files):
-    mix = np.asarray([np.array(read(os.path.join(file, "mixture.wav"))[1], dtype=float)  for file in files[0]])
-    vocals = np.asarray([np.array(read(os.path.join(file, "vocals.wav"))[1], dtype=float)  for file in files[1]])
+    mix = np.asarray([read(os.path.join(file, "mixture.wav"))[1] for file in files[0]])
+    vocals = np.asarray([read(os.path.join(file, "vocals.wav"))[1]  for file in files[1]])
     bgms = []
     for file in files[1]:
         bass = AudioSegment.from_wav(os.path.join(file, "bass.wav"))
         drums = AudioSegment.from_wav(os.path.join(file, "drums.wav"))
         other = AudioSegment.from_wav(os.path.join(file, "other.wav"))
         bgm = bass.overlay(drums.overlay(other))
-        bgms.append(np.array(bgm.get_array_of_samples(), dtype=float))
+        bgms.append(bgm.get_array_of_samples())
     bgms = np.asarray(bgms)
     return mix, vocals, bgms
 
 
-def get_train_test():
-    mix_train, vocals_trian, bgm_train = DSD2np(get_DSD_files('training'))
-    mix_test, vocals_test, bgm_test = DSD2np(get_DSD_files('testing'))
-    return mix_train, vocals_trian, bgm_train, mix_test, vocals_test, bgm_test
+def get_train_test(args):
+    dataset_paths = {
+    'mixtures': os.path.join(args.dataroot, 'Mixtures'),
+    'sources': os.path.join(args.dataroot, 'Sources')
+    }
+    mixtures_list_train, sources_list_train = get_DSD_files('training',dataset_paths)
+    mix_train, vocals_trian, bgm_train = DSD2np((mixtures_list_train, sources_list_train))
+
+    mixtures_list_test, sources_list_test = get_DSD_files('testing',dataset_paths)
+    mix_test, vocals_test, bgm_test = DSD2np((mixtures_list_test, sources_list_test))
+    return mixtures_list_train, sources_list_train, mixtures_list_test, sources_list_test, mix_train, vocals_trian, bgm_train, mix_test, vocals_test, bgm_test
 
 
