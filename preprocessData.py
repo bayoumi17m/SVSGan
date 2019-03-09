@@ -15,7 +15,11 @@ def parse_args():
     #parser.add_argument('--dataset', type=str, default='mnist', help='Load a previous dataset')
     parser.add_argument('--dataroot', type=str, default='./data/', help='path to dataset')
     parser.add_argument('--store_data', type=str, default='./data/', help='path to dataset')
+    parser.add_argument('--rate', default=44100, help='Sampling rate for STFT')
+    args = parser.parse_args()
+
+    return args
 
 if __name__ == "__main__":
     args = parse_args()
-    utils.DataSetCleaner(args.dataroot, args.store_data)
+    utils.DataSetCleaner(args.dataroot, args.store_data, args)
