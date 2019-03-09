@@ -56,16 +56,16 @@ class Discriminator(nn.Module):
         self.bn3 = nn.BatchNorm1d(args.ndf)
         self.fc4 = nn.Conv1d(args.ndf, 1,1)
 
-    def forward(self,y1,y2,z):
-        """forward function that takes two sources from the generator and the mixture"""
+    def forward(self,y1,y2):
+        """forward function that takes two sources from the generator"""
         y1 = y1.transpose(1,2).contiguous()
         y2 = y2.transpose(1,2).contiguous()
-        z = z.transpose(1,2).contiguous()
-        x = torch.cat([y1, y2, z], 1)
+
+        x = torch.cat([y1, y2], 1)
         x = F.leaky_relu(self.fc1(x), 0.2)
         x = F.leaky_relu(self.bn2(self.fc2(x)), 0.2)
         x = F.leaky_relu(self.bn3(self.fc3(x)), 0.2)
-        x = F.sigmoid(self.fc4(x))
+        x = torch.sigmoid(self.fc4(x))
         return x.transpose(1,2)
 
 

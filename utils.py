@@ -15,9 +15,9 @@ def get_args():
     import argparse
     parser = argparse.ArgumentParser()
     #parser.add_argument('--dataset', type=str, default='mnist', help='Load a previous dataset')
-    parser.add_argument('--train_directory', type=str, default='./data/', help='path to dataset')
-    parser.add_argument('--val_directory', type=str, default='./data/', help='path to dataset')
-    parser.add_argument('--test_directory', type=str, default='./data/', help='path to dataset')
+    parser.add_argument('--train_directory', type=str, default='Data/Data_Store', help='path to dataset')
+    parser.add_argument('--val_directory', type=str, default='Data/Data_Store', help='path to dataset')
+    parser.add_argument('--test_directory', type=str, default='Data/Data_Store', help='path to dataset')
     parser.add_argument('--log-dir', type=str, default=None, help='Logging directory (default None)')
     parser.add_argument('--store_data', type=str, default='./data/', help='path to dataset')
     parser.add_argument('--resume', type=str, default=None, help='File to resume')
@@ -25,12 +25,12 @@ def get_args():
     parser.add_argument('--resume_D', type=str, default=None, help='File to resume')
     parser.add_argument('--workers', type=int, help='number of data loading workers', default=4)
 
-    parser.add_argument('--epochs', type=int, default=10, help='Number of epochs to train it.')
+    parser.add_argument('--epochs', type=int, default=10000, help='Number of epochs to train it.')
     parser.add_argument('--log-step', type=int, default=10, help='Logging step to the terminal.')
     parser.add_argument('--save-step', type=int, default=1, help='Number of steps to save it.')
     parser.add_argument('--val_freq', type=int, default=1, help='Validation frequency (unit: epochs).')
-    parser.add_argument('--batch_size', type=int, default=128, help='input batch size')
-    parser.add_argument('--save_freq', type=int, default=1, help='Saving frequency (unit: epochs).')
+    parser.add_argument('--batch_size', type=int, default=1, help='input batch size')
+    parser.add_argument('--save_freq', type=int, default=1000, help='Saving frequency (unit: epochs).')
     parser.add_argument('--lrG', type=float, default=0.001,
             help='learning rate for, G_loss generator, default=0.001')
     parser.add_argument('--lrD', type=float, default=0.001,
@@ -50,7 +50,7 @@ def get_args():
     parser.add_argument('--noise_recon_weight', type=float, default=0.4, help='noise reconstruction loss weight')
     parser.add_argument('--gp_center', type=float, default=0., help='gradient penalty center')
     parser.add_argument('--gp_weight', type=float, default=1., help='gradient penality weight')
-    parser.add_argument('--inD', type=int, default=1503, help='size of the input features of the discriminator')
+    parser.add_argument('--inD', type=int, default=1002, help='size of the input features of the discriminator')
     parser.add_argument('--train', action="store_true", default=True, help='Training mode')
     args = parser.parse_args()
 

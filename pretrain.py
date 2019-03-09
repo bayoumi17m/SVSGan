@@ -136,7 +136,7 @@ if __name__ == "__main__":
         if (epoch_idx + 1) % args.val_freq == 0:
             print("Val for epoch idx: %s"%epoch_idx)
             res = validate(model, val_loader, epoch, writer)
-            pprint(res)
+            print(res)
 
         if (epoch_idx + 1) % args.save_freq == 0:
             save(model, opt, save_dir, epoch, args)
