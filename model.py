@@ -66,7 +66,6 @@ class Discriminator(nn.Module):
         # y2 = y2.transpose(1,2).contiguous()
 
         # x = torch.cat([y1, y2], 1)
-        x = x.transpose(1,2).contiguous()
         x = F.leaky_relu(self.fc1(x), 0.2)
         x = F.leaky_relu(self.bn2(self.fc2(x)), 0.2)
         x = F.leaky_relu(self.bn3(self.fc3(x)), 0.2)
