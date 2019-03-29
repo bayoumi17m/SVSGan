@@ -80,24 +80,71 @@ def prepData(store_data,stype,filename,data,rate):
     np.save(os.path.join(path,"magnitude_"+ filename),magnitude)
     np.save(os.path.join(path,"phase_"+ filename),phase)
 
+def prepareDataFiles(store_data,song_name,mix_path,vocal_path,bgm_path):
+    try:
+        os.mkdir(os.path.join(store_data,song_name))
+        os.mkdir(os.path.join(os.path.join(store_data,song_name), "mixture"))
+        os.mkdir(os.path.join(os.path.join(store_data,song_name), "vocal"))
+        os.mkdir(os.path.join(os.path.join(store_data,song_name), "noise"))
+    except:
+        pass
+
+    mix_rate, mixture = scipy.io.wavfile.read(mix_path)
+    vocal_rate, vocal = scipy.io.wavfile.read(vocal_path)
+    bgm_rate, bgm = scipy.io.wavfile.read(bgm_path)
+
+
+    for stype, data, rate in zip(["mixture","vocal","noise"],[mixture,vocal,bgm],[mix_rate,vocal_rate,bgm_rate])
+        path = os.path.join(os.path.join(store_data,song_name),stype)
+        filename = song_name
+
+        f, t, Sxx = signal.stft(data,rate,nperseg=1000)
+        magnitude = np.abs(Sxx)
+        phase = np.unwrap(np.angle(Sxx),axis=-2)
+        np.save(os.path.join(path,"rate_"+ filename),rate)
+        np.save(os.path.join(path,"freq_"+ filename),f)
+        np.save(os.path.join(path,"time_"+ filename),t)
+        np.save(os.path.join(path,"magnitude_"+ filename),magnitude)
+        np.save(os.path.join(path,"phase_"+ filename),phase)
+
+
 
 def DataSetCleaner(dataroot,store_data,args):
-    mixtures_list_train, sources_list_train, mixtures_list_test, sources_list_test, mix_train, \
-        vocals_train, bgm_train, mix_test, vocals_test, bgm_test = get_train_test(args)
-    rate = args.rate
-    i = 0
-    for file_name in mixtures_list_train:
-        #rate, data = scipy.io.wavfile.read(os.path.join(dataroot,filename))
-        _, song_name = os.path.split(file_name)
-        print(mix_train.shape)
-        try:
-            os.mkdir(os.path.join(store_data,"train"))
-        except:
-            pass
-        prepData(os.path.join(store_data, "train"),"mixture",song_name,mix_train[i],rate)
-        prepData(os.path.join(store_data, "train"),"vocals",song_name,vocals_train[i],rate)
-        prepData(os.path.join(store_data, "train"),"noise",song_name,bgm_train[i],rate)
-        i += 1
+    # mixtures_list_train, sources_list_train, mixtures_list_test, sources_list_test, mix_train, \
+    #     vocals_train, bgm_train, mix_test, vocals_test, bgm_test = get_train_test(args)
+    
+    # Incomplete Reading in Method - Wav Data
+    files = os.listdir()
+    song_names = []
+    for file in files:
+        if len(file) > 5 and file[-4:] == ".wav":
+            if file[:-4] in song_names:
+                continue
+            else:
+                song_names.append(file[:-4])
+
+    for song in song_names:
+        vocal_path = os.path.join(dataroot,song + ".stem_vocal.wav")
+        bgm_path = os.path.join(dataroot,song + ".stem_accompaniment.wav")
+        mix_path = os.path.join(dataroot,song + ".stem_mix.wav")
+        prepareDataFiles(store_data,song,mix_path,vocal_path,bgm_path)
+
+    # METHOD INCOMPLETE
+
+    # rate = args.rate
+    # i = 0
+    # for file_name in mixtures_list_train:
+    #     #rate, data = scipy.io.wavfile.read(os.path.join(dataroot,filename))
+    #     _, song_name = os.path.split(file_name)
+    #     print(mix_train.shape)
+    #     try:
+    #         os.mkdir(os.path.join(store_data,"train"))
+    #     except:
+    #         pass
+    #     prepData(os.path.join(store_data, "train"),"mixture",song_name,mix_train[i],rate)
+    #     prepData(os.path.join(store_data, "train"),"vocals",song_name,vocals_train[i],rate)
+    #     prepData(os.path.join(store_data, "train"),"noise",song_name,bgm_train[i],rate)
+    #     i += 1
         # f, t, Sxx = signal.stft(data,rate,nperseg=1000)
         # magnitude = np.abs(Sxx)
         # phase = np.unwrap(np.angle(Sxx),axis=-2)
@@ -106,17 +153,17 @@ def DataSetCleaner(dataroot,store_data,args):
         # np.save(os.path.join(os.path.join(store_data,filename[:-4]),"time_"+ filename[:-4]),t)
         # np.save(os.path.join(os.path.join(store_data,filename[:-4]),"magnitude_"+ filename[:-4]),magnitude)
         # np.save(os.path.join(os.path.join(store_data,filename[:-4]),"phase_"+ filename[:-4]),phase)
-    try:
-        os.mkdir(os.path.join(store_data,"test"))
-    except:
-        pass
-    i = 0
-    for file_name in mixtures_list_test:
-        _, song_name = os.path.split(file_name)
-        prepData(os.path.join(store_data, "test"),"mixture",song_name,mix_test[i],rate)
-        prepData(os.path.join(store_data, "test"),"vocals",song_name,vocals_test[i],rate)
-        prepData(os.path.join(store_data, "test"),"noise",song_name,bgm_test[i],rate)
-        i += 1
+    # try:
+    #     os.mkdir(os.path.join(store_data,"test"))
+    # except:
+    #     pass
+    # i = 0
+    # for file_name in mixtures_list_test:
+    #     _, song_name = os.path.split(file_name)
+    #     prepData(os.path.join(store_data, "test"),"mixture",song_name,mix_test[i],rate)
+    #     prepData(os.path.join(store_data, "test"),"vocals",song_name,vocals_test[i],rate)
+    #     prepData(os.path.join(store_data, "test"),"noise",song_name,bgm_test[i],rate)
+    #     i += 1
 
 def reConstructSound(filename,magnitude,phase,fs):
     Zxx = magnitude * np.exp(1j * phase)
