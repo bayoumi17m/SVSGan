@@ -94,7 +94,7 @@ def prepareDataFiles(store_data,song_name,mix_path,vocal_path,bgm_path):
     bgm_rate, bgm = scipy.io.wavfile.read(bgm_path)
 
 
-    for stype, data, rate in zip(["mixture","vocal","noise"],[mixture,vocal,bgm],[mix_rate,vocal_rate,bgm_rate])
+    for stype, data, rate in zip(["mixture","vocal","noise"],[mixture,vocal,bgm],[mix_rate,vocal_rate,bgm_rate]):
         path = os.path.join(os.path.join(store_data,song_name),stype)
         filename = song_name
 
@@ -114,17 +114,17 @@ def DataSetCleaner(dataroot,store_data,args):
     #     vocals_train, bgm_train, mix_test, vocals_test, bgm_test = get_train_test(args)
     
     # Incomplete Reading in Method - Wav Data
-    files = os.listdir()
+    files = os.listdir(dataroot)
     song_names = []
     for file in files:
-        if len(file) > 5 and file[-4:] == ".wav":
+        if len(file) > 5 and file[-4:] == ".mp4":
             if file[:-4] in song_names:
                 continue
             else:
-                song_names.append(file[:-4])
+                song_names.append(file[:-9])
 
     for song in song_names:
-        vocal_path = os.path.join(dataroot,song + ".stem_vocal.wav")
+        vocal_path = os.path.join(dataroot,song + ".stem_vocals.wav")
         bgm_path = os.path.join(dataroot,song + ".stem_accompaniment.wav")
         mix_path = os.path.join(dataroot,song + ".stem_mix.wav")
         prepareDataFiles(store_data,song,mix_path,vocal_path,bgm_path)

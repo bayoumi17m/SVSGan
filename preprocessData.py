@@ -22,4 +22,5 @@ def parse_args():
 
 if __name__ == "__main__":
     args = parse_args()
+    print(args.dataroot)
     utils.DataSetCleaner(args.dataroot, args.store_data, args)
