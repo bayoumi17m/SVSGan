@@ -36,16 +36,16 @@ def _gradient_penalty_centered_(c_real, model, gp_weight, center=0.):
     return gp_weight * ((gradients_norm - center) ** 2).mean()
 
 
-def gan_training(model, step, vocal_real,bgm_real,in_mixture, gp_center, writer):
+def gan_training(model, step, vocal_real, bgm_real, in_mixture, phase, rate, gp_center, writer):
     model.dis_optim.zero_grad()
 
     vocal_fake, bgm_fake = model.G(in_mixture)
 
-    D_real = model.D(vocal_real, bgm_real)
+    D_real = model.D(vocal_real)
     D_real_loss = model.bce(D_real, model.real[:D_real.shape[0], :, :])
     gp = _gradient_penalty_centered_([vocal_real, bgm_real], model, args.gp_weight, center=gp_center)
 
-    D_fake = model.D(vocal_fake, bgm_fake)
+    D_fake = model.D(vocal_fake)
     D_fake_loss = model.bce(D_fake, model.fake[:D_fake.shape[0],:,:])
 
     D_loss = D_real_loss + D_fake_loss + gp
@@ -56,8 +56,17 @@ def gan_training(model, step, vocal_real,bgm_real,in_mixture, gp_center, writer)
     model.gen_optim.zero_grad()
     vocal_fake, bgm_fake = model.G(in_mixture)
 
-    D_fake = model.D(vocal_fake, bgm_fake)
+    D_fake = model.D(vocal_fake)
+
+    vocal_fake_wav = utils.reConstructWav(vocal_fake.numpy(), phase, rate)
+    bgm_fake_wav = utils.reConstructWav(bgm_fake.numpy(), phase, rate)
+    mixture_fake_wav = vocal_fake_wav + bgm_fake_wav
+    mixture_wav = utils.reConstructWav(in_mixture, phase, rate)
+
+    rec_loss = model.l2(mixture_wav, mixture_fake_wav)
+
     G_loss = model.bce(D_fake, model.real[:D_fake.shape[0], :, :])
+    G_loss = G_loss + rec_loss
     writer.add_scalar('G_loss', G_loss.cpu().detach().item(), step)
     G_loss.backward()
     model.gen_optim.step()
@@ -73,8 +82,10 @@ def train_gan(model, data_loader, epochs, args, writer):
             vocal_real = vocal_real_dic['magnitude'].float().cuda()
             bgm_real = bgm_real_dic['magnitude'].float().cuda()
             in_mixture = in_mixture_dic['magnitude'].float().cuda()
+            mixture_phase = in_mixture_dic['phase'].float().cuda()
+            rate = args.rate
 
-            D_loss, G_loss, gp = gan_training(model, step, vocal_real,bgm_real,in_mixture, args.gp_center,  writer)
+            D_loss, G_loss, gp = gan_training(model, step, vocal_real, bgm_real, in_mixture, mixture_phase, rate, args.gp_center, writer)
             step += 1
 
         if (epoch) % 10  == 0:

@@ -20,7 +20,9 @@ class Generator(nn.Module):
         self.bn2 = nn.BatchNorm1d(args.ngf)
         self.fc3 = nn.Conv1d(args.ngf,args.ngf,1)
         self.bn3 = nn.BatchNorm1d(args.ngf)
-        self.fc4 = nn.Conv1d(args.ngf,args.N_FFT,1)
+        # self.fc4 = nn.Conv1d(args.ngf,args.N_FFT,1)
+        self.fc4_1 = nn.Conv1d(args.ngf,args.N_FFT,1)
+        self.fc4_2 = nn.Conv1d(args.ngf,args.N_FFT,1)
 
 
     def forward(self,z):
@@ -32,14 +34,16 @@ class Generator(nn.Module):
         x = F.relu(self.bn1(x))
         x = F.relu(self.bn2(self.fc2(x)))
         x = F.relu(self.bn3(self.fc3(x)))
-        x = torch.sigmoid(self.fc4(x))
+        vocal = torch.exp(self.fc4_1(x))
+        noise = torch.exp(self.fc4_2(x))
+        # x = torch.sigmoid(self.fc4(x))
 
-        # time-frequency masking
-        vocal = x * z
-        noise = (1 - x) * z
+        # # time-frequency masking
+        # vocal = x * z
+        # noise = (1 - x) * z
 
-        vocal = vocal.transpose(1,2)
-        noise = noise.transpose(1,2)
+        # vocal = vocal.transpose(1,2)
+        # noise = noise.transpose(1,2)
         return vocal, noise
 
 
@@ -56,12 +60,13 @@ class Discriminator(nn.Module):
         self.bn3 = nn.BatchNorm1d(args.ndf)
         self.fc4 = nn.Conv1d(args.ndf, 1,1)
 
-    def forward(self,y1,y2):
+    def forward(self,x):
         """forward function that takes two sources from the generator"""
-        y1 = y1.transpose(1,2).contiguous()
-        y2 = y2.transpose(1,2).contiguous()
+        # y1 = y1.transpose(1,2).contiguous()
+        # y2 = y2.transpose(1,2).contiguous()
 
-        x = torch.cat([y1, y2], 1)
+        # x = torch.cat([y1, y2], 1)
+        x = x.transpose(1,2).contiguous()
         x = F.leaky_relu(self.fc1(x), 0.2)
         x = F.leaky_relu(self.bn2(self.fc2(x)), 0.2)
         x = F.leaky_relu(self.bn3(self.fc3(x)), 0.2)
