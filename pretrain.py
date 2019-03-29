@@ -9,7 +9,7 @@ import torch.optim as optim
 from pprint import pprint
 from tensorboardX import SummaryWriter
 import os
-
+from scipy import signal
 
 def step(model, opt, data, step, writer, args):
     #print(data)
@@ -21,10 +21,11 @@ def step(model, opt, data, step, writer, args):
 
     if args.cuda:
         mix_spec, voc_spec, noi_spec = mix_spec.cuda(), voc_spec.cuda(), noi_spec.cuda()
-    print(mix_spec.shape)
+    print('max:' + str((voc_spec / mix_spec).max()))
+    print('min:' + str((voc_spec / mix_spec).min()))
     vocal_recon, noise_recon = model(mix_spec)
-    vocal_recon_loss = F.mse_loss(vocal_recon, voc_spec)
-    noise_recon_loss = F.mse_loss(noise_recon, noi_spec)
+    vocal_recon_loss = F.mse_loss(vocal_recon/mix_spec, voc_spec/mix_spec)
+    noise_recon_loss = F.mse_loss(noise_recon/mix_spec, noi_spec/mix_spec)
     loss = args.vocal_recon_weight * vocal_recon_loss + args.noise_recon_weight * noise_recon_loss
 
     opt.zero_grad()
@@ -44,7 +45,8 @@ def validate(model, loader, epoch, writer):
         vocal_recon_loss = 0.
         noise_recon_loss = 0.
         n = 0
-        for data in loader:
+        idx = np.random.randint(len(loader))
+        for i, data in enumerate(loader):
             mixture, vocal, noise = data
             mix_spec = mixture['magnitude'].float()
             voc_spec = vocal['magnitude'].float()
@@ -52,9 +54,28 @@ def validate(model, loader, epoch, writer):
             if args.cuda:
                 mix_spec, voc_spec, noi_spec = mix_spec.cuda(), voc_spec.cuda(), noi_spec.cuda()
             vocal_recon, noise_recon = model(mix_spec)
-            noise_recon_loss += F.mse_loss(noise_recon, noi_spec)
-            vocal_recon_loss += F.mse_loss(vocal_recon, voc_spec)
+            
+            noise_recon_loss += F.mse_loss(noise_recon/mix_spec, noi_spec/mix_spec)
+            vocal_recon_loss += F.mse_loss(vocal_recon/mix_spec, voc_spec/mix_spec)
             n += mix_spec.size(0)
+            
+            if epoch % 50 == 0 and i == idx:
+                idx_b = np.random.randint(mix_spec.shape[0])
+#                 writer.add_image("val/mix_spec", mix_spec[idx_b].cpu().detach(), epoch)
+                writer.add_image("val/voc_spec", voc_spec[idx_b].cpu().detach(), epoch)
+                writer.add_image("val/noi_spec", noi_spec[idx_b].cpu().detach(), epoch)
+
+                writer.add_image("val/vocal_recon", vocal_recon[idx_b].cpu().detach(), epoch)
+                writer.add_image("val/noise_recon", noise_recon[idx_b].cpu().detach(), epoch)
+
+                _ , mixtlabel = signal.istft(mix_spec[idx_b].cpu().detach().numpy().T * np.exp(1j * mixture['phase'][idx_b].cpu().detach().numpy().T), fs = 44100)
+                _ , label = signal.istft(voc_spec[idx_b].cpu().detach().numpy().T * np.exp(1j * vocal['phase'][idx_b].cpu().detach().numpy().T), fs = 44100)
+                _ , recon = signal.istft(np.array(vocal_recon[idx_b].cpu().detach().numpy().T * np.exp(1j * vocal['phase'][idx_b].cpu().detach().numpy().T)), fs = 44100)
+                
+                writer.add_audio("val/vocal_mixture_audio", mixtlabel/ np.abs(mixtlabel).max() ,epoch, sample_rate =  44100)
+                writer.add_audio("val/vocal_label_audio", label/ np.abs(label).max() ,epoch, sample_rate =  44100)
+                writer.add_audio("val/vocal_recon_audio", recon/ np.abs(recon).max() ,epoch, sample_rate =  44100)
+                                         
         n = float(n)
         vocal_recon_loss /= n
         noise_recon_loss /= n
@@ -62,6 +83,8 @@ def validate(model, loader, epoch, writer):
         # Log
         writer.add_scalar("val/vocal_loss", vocal_recon_loss.cpu().detach().item(), epoch)
         writer.add_scalar("val/noise_loss", noise_recon_loss.cpu().detach().item(), epoch)
+        
+        
 
     return {
         'vocal' : vocal_recon_loss.cpu().detach().item(),
@@ -89,8 +112,9 @@ def save(model, opt, save_dir, epoch, args):
 
 def resume(ckpt_path, model, opt):
     ckpt = torch.load(ckpt_path)
-    model = model.load(ckpt['model'])
-    opt = model.load(ckpt['opt'])
+    model.load_state_dict(ckpt['model'])
+    opt = optim.Adam(model.parameters(), lr=args.lrG, betas=(args.Gbeta1,args.Gbeta2))
+    opt.load_state_dict(ckpt['opt'])
     return model, opt
 
 
