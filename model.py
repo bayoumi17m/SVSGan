@@ -35,8 +35,6 @@ class Generator(nn.Module):
         x = torch.sigmoid(self.fc4(x))
 
         # time-frequency masking
-#         print(x.max())
-#         print(x.min())
         vocal = x * z
         noise = (1 - x) * z
 
