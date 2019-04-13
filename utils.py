@@ -8,7 +8,7 @@ import scipy
 from scipy import signal
 import scipy.io.wavfile
 from scipy.io.wavfile import read
-from pydub import AudioSegment
+#from pydub import AudioSegment
 import fnmatch
 import tqdm
 
@@ -220,8 +220,8 @@ class DSD100Dataset(Dataset):
         # TODO : subsampling
         data = [self.data[idx][0], self.data[idx][1], self.data[idx][2]]
         prefixIdx = ("mixture", "vocal", "noise")
-        length = len(self.data[idx][0]["magnitude"])
-        sIdx = np.random.randint(0,length- 1 - self.sample_length); eIdx = sIdx + 200
+        length = (self.data[idx][0]["magnitude"]).shape[1]
+        sIdx = np.random.randint(0,length- 1 - self.sample_length); eIdx = sIdx + self.sample_length
         for i in range(len(prefixIdx)):
             data[i] = {"magnitude": data[i]["magnitude"][:, sIdx:eIdx].T, "phase": data[i]["phase"][:, sIdx:eIdx].T}
 
