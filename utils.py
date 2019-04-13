@@ -30,7 +30,7 @@ def get_args():
     parser.add_argument('--log-step', type=int, default=10, help='Logging step to the terminal.')
     parser.add_argument('--save-step', type=int, default=1, help='Number of steps to save it.')
     parser.add_argument('--val_freq', type=int, default=1, help='Validation frequency (unit: epochs).')
-    parser.add_argument('--batch_size', type=int, default=16, help='input batch size')
+    parser.add_argument('--batch_size', type=int, default=1, help='input batch size')
     parser.add_argument('--save_freq', type=int, default=1000, help='Saving frequency (unit: epochs).')
     parser.add_argument('--lrG', type=float, default=0.001,
             help='learning rate for, G_loss generator, default=0.001')
