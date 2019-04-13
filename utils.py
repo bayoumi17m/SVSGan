@@ -50,7 +50,7 @@ def get_args():
     parser.add_argument('--noise_recon_weight', type=float, default=0.4, help='noise reconstruction loss weight')
     parser.add_argument('--gp_center', type=float, default=0., help='gradient penalty center')
     parser.add_argument('--gp_weight', type=float, default=1., help='gradient penality weight')
-    parser.add_argument('--inD', type=int, default=501, help='size of the input features of the discriminator')
+    parser.add_argument('--inD', type=int, default=1002, help='size of the input features of the discriminator')
     parser.add_argument('--train', action="store_true", default=True, help='Training mode')
     args = parser.parse_args()
 
@@ -169,12 +169,6 @@ def reConstructSound(filename,magnitude,phase,fs):
     Zxx = magnitude * np.exp(1j * phase)
     t2, xrec = signal.istft(Zxx, fs)
     scipy.io.wavfile.write(filename,fs,xrec)
-
-
-def reConstructWav(magnitude,phase,rate):
-    Zxx = magnitude * np.exp(1j * phase)
-    _, xrec = signal.istft(Zxx, rate)
-    return xrec
 
 
 class DSD100Dataset(Dataset):
