@@ -44,7 +44,7 @@ class Generator(nn.Module):
 
         # vocal = vocal.transpose(1,2)
         # noise = noise.transpose(1,2)
-        return vocal, noise
+        return vocal.transpose(1,2), noise.transpose(1,2)
 
 
 class Discriminator(nn.Module):
