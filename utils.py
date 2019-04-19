@@ -11,6 +11,7 @@ from scipy.io.wavfile import read
 #from pydub import AudioSegment
 import fnmatch
 import tqdm
+from stft import STFT
 
 def get_args():
     import argparse
@@ -53,6 +54,7 @@ def get_args():
     parser.add_argument('--gp_weight', type=float, default=1., help='gradient penality weight')
     parser.add_argument('--inD', type=int, default=1002, help='size of the input features of the discriminator')
     parser.add_argument('--train', action="store_true", default=True, help='Training mode')
+    parser.add_argument('--rate', default=44100, help='Sampling rate for STFT')
     args = parser.parse_args()
 
     return args
@@ -170,6 +172,15 @@ def reConstructSound(filename,magnitude,phase,fs):
     Zxx = magnitude * np.exp(1j * phase)
     t2, xrec = signal.istft(Zxx, fs)
     scipy.io.wavfile.write(filename,fs,xrec)
+
+def reConstructWav(in_wav,magnitude,phase):
+    """require input wavform's shape to do the differentiable reconstruction"""
+    input_data = torch.autograd.Variable(torch.FloatTensor(in_wav), requires_grad=False).unsqueeze(0)
+    magnitude = torch.from_numpy(np.expand_dims(magnitude, axis=0)).float()
+    phase = torch.from_numpy(np.expand_dims(phase, axis=0)).float()
+    stft = STFT(input_data, magnitude, phase)
+    xrec = stft()[0][0]
+    return xrec
 
 
 class DSD100Dataset(Dataset):
