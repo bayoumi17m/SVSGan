@@ -36,7 +36,7 @@ def _gradient_penalty_centered_(c_real, model, gp_weight, center=0.):
     return gp_weight * ((gradients_norm - center) ** 2).mean()
 
 
-def gan_training(model, step, vocal_real, bgm_real, in_mixture, phase, rate, gp_center, writer):
+def gan_training(model, step, vocal_real, bgm_real, in_mixture, phase, size, gp_center, writer):
     model.dis_optim.zero_grad()
 
     vocal_fake, bgm_fake = model.G(in_mixture)
@@ -58,10 +58,10 @@ def gan_training(model, step, vocal_real, bgm_real, in_mixture, phase, rate, gp_
 
     D_fake = model.D(vocal_fake)
 
-    vocal_fake_wav = utils.reConstructWav(vocal_fake.numpy(), phase, rate)
-    bgm_fake_wav = utils.reConstructWav(bgm_fake.numpy(), phase, rate)
+    vocal_fake_wav = utils.reConstructWav(size, vocal_fake.cpu().detach().numpy(), phase)
+    bgm_fake_wav = utils.reConstructWav(size, bgm_fake.cpu().detach().numpy(), phase)
     mixture_fake_wav = vocal_fake_wav + bgm_fake_wav
-    mixture_wav = utils.reConstructWav(in_mixture, phase, rate)
+    mixture_wav = utils.reConstructWav(size, in_mixture.cpu().detach().numpy(), phase)
 
     rec_loss = model.l2(mixture_wav, mixture_fake_wav)
 
@@ -83,9 +83,9 @@ def train_gan(model, data_loader, epochs, args, writer):
             bgm_real = bgm_real_dic['magnitude'].float().cuda()
             in_mixture = in_mixture_dic['magnitude'].float().cuda()
             mixture_phase = in_mixture_dic['phase'].float().cuda()
-            rate = args.rate
+            size = in_mixture_dic['size']
 
-            D_loss, G_loss, gp = gan_training(model, step, vocal_real, bgm_real, in_mixture, mixture_phase, rate, args.gp_center, writer)
+            D_loss, G_loss, gp = gan_training(model, step, vocal_real, bgm_real, in_mixture, mixture_phase, size, args.gp_center, writer)
             step += 1
 
         if (epoch) % 10  == 0:
