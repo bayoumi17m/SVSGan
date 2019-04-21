@@ -45,14 +45,14 @@ def get_args():
     parser.add_argument('--seed', default=100, type=int, help='Random seed.')
     parser.add_argument('--load', action="store_true", help='load dataset')
     parser.add_argument('--ngf', type=int, default=1024, help='number of features in generator')
-    parser.add_argument('--ndf', type=int, default=501, help='number of features in discriminator')
-    parser.add_argument('--N_FFT', type=int, default=501, help='size of the input spectra of the generator')
+    parser.add_argument('--ndf', type=int, default=513, help='number of features in discriminator')
+    parser.add_argument('--N_FFT', type=int, default=513, help='size of the input spectra of the generator')
     parser.add_argument('--sample_length', type=int, default=200, help='length of the subsample')
     parser.add_argument('--vocal_recon_weight', type=float, default=0.6, help='vocal reconstruction loss weight')
     parser.add_argument('--noise_recon_weight', type=float, default=0.4, help='noise reconstruction loss weight')
     parser.add_argument('--gp_center', type=float, default=0., help='gradient penalty center')
     parser.add_argument('--gp_weight', type=float, default=1., help='gradient penality weight')
-    parser.add_argument('--inD', type=int, default=1002, help='size of the input features of the discriminator')
+    parser.add_argument('--inD', type=int, default=513, help='size of the input features of the discriminator')
     parser.add_argument('--train', action="store_true", default=True, help='Training mode')
     parser.add_argument('--rate', default=44100, help='Sampling rate for STFT')
     args = parser.parse_args()
@@ -186,7 +186,7 @@ class DSD100Dataset(Dataset):
         length = (self.data[idx][0]["magnitude"]).shape[1]
         sIdx = np.random.randint(0,length- 1 - self.sample_length); eIdx = sIdx + self.sample_length
         for i in range(len(prefixIdx)):
-            data[i] = {"magnitude": data[i]["magnitude"][:, sIdx:eIdx].T, "phase": data[i]["phase"][:, sIdx:eIdx].T}
+            data[i] = {"magnitude": data[i]["magnitude"][:, sIdx:eIdx].T, "phase": data[i]["phase"][:, sIdx:eIdx].T, "size": data[i]["size"]}
 
         #import pdb; pdb.set_trace()
         return tuple(data)
