@@ -11,6 +11,7 @@ from scipy.io.wavfile import read
 #from pydub import AudioSegment
 import fnmatch
 import tqdm
+from stft import STFT
 
 def get_args():
     import argparse
@@ -53,33 +54,10 @@ def get_args():
     parser.add_argument('--gp_weight', type=float, default=1., help='gradient penality weight')
     parser.add_argument('--inD', type=int, default=1002, help='size of the input features of the discriminator')
     parser.add_argument('--train', action="store_true", default=True, help='Training mode')
+    parser.add_argument('--rate', default=44100, help='Sampling rate for STFT')
     args = parser.parse_args()
 
     return args
-
-def prepData(store_data,stype,filename,data,rate):
-    try:
-        os.mkdir(os.path.join(store_data,filename))
-    except:
-        pass
-    try:
-        os.mkdir(os.path.join(store_data,filename))
-    except:
-        pass
-    try:
-        os.mkdir(os.path.join(os.path.join(store_data,filename),stype))
-    except:
-        pass
-    path = os.path.join(os.path.join(store_data,filename),stype)
-    # print(os.path.join(store_data,filename))
-    f, t, Sxx = signal.stft(data,rate,nperseg=1000)
-    magnitude = np.abs(Sxx)
-    phase = np.unwrap(np.angle(Sxx),axis=-2)
-    np.save(os.path.join(path,"rate_"+ filename),rate)
-    np.save(os.path.join(path,"freq_"+ filename),f)
-    np.save(os.path.join(path,"time_"+ filename),t)
-    np.save(os.path.join(path,"magnitude_"+ filename),magnitude)
-    np.save(os.path.join(path,"phase_"+ filename),phase)
 
 def prepareDataFiles(store_data,song_name,mix_path,vocal_path,bgm_path):
     try:
@@ -103,14 +81,22 @@ def prepareDataFiles(store_data,song_name,mix_path,vocal_path,bgm_path):
         path = os.path.join(os.path.join(store_data,song_name),stype)
         filename = song_name
 
-        f, t, Sxx = signal.stft(data,rate,nperseg=1000)
-        magnitude = np.abs(Sxx)
-        phase = np.unwrap(np.angle(Sxx),axis=-2)
+        in_wav = torch.autograd.Variable(torch.FloatTensor(data), requires_grad=False).unsqueeze(0)
+        stft = STFT(input_data=in_wav)
+        magnitude, phase = stft()
+        magnitude = torch.squeeze(magnitude)
+        phase = torch.squeeze(phase)
+        size = in_wav.size(1)
+        # f, t, Sxx = signal.stft(data,rate,nperseg=1000)
+        # magnitude = np.abs(Sxx)
+        # phase = np.unwrap(np.angle(Sxx),axis=-2)
+
         np.save(os.path.join(path,"rate_"+ filename),rate)
-        np.save(os.path.join(path,"freq_"+ filename),f)
-        np.save(os.path.join(path,"time_"+ filename),t)
-        np.save(os.path.join(path,"magnitude_"+ filename),magnitude)
-        np.save(os.path.join(path,"phase_"+ filename),phase)
+        # np.save(os.path.join(path,"freq_"+ filename),f)
+        # np.save(os.path.join(path,"time_"+ filename),t)
+        np.save(os.path.join(path,"magnitude_" + filename),magnitude)
+        np.save(os.path.join(path,"phase_"+  filename),phase)
+        np.save(os.path.join(path,"size_" + filename),size)
 
 
 
@@ -134,46 +120,19 @@ def DataSetCleaner(dataroot,store_data,args):
         mix_path = os.path.join(dataroot,song + ".stem_mix.wav")
         prepareDataFiles(store_data,song,mix_path,vocal_path,bgm_path)
 
-    # METHOD INCOMPLETE
-
-    # rate = args.rate
-    # i = 0
-    # for file_name in mixtures_list_train:
-    #     #rate, data = scipy.io.wavfile.read(os.path.join(dataroot,filename))
-    #     _, song_name = os.path.split(file_name)
-    #     print(mix_train.shape)
-    #     try:
-    #         os.mkdir(os.path.join(store_data,"train"))
-    #     except:
-    #         pass
-    #     prepData(os.path.join(store_data, "train"),"mixture",song_name,mix_train[i],rate)
-    #     prepData(os.path.join(store_data, "train"),"vocals",song_name,vocals_train[i],rate)
-    #     prepData(os.path.join(store_data, "train"),"noise",song_name,bgm_train[i],rate)
-    #     i += 1
-        # f, t, Sxx = signal.stft(data,rate,nperseg=1000)
-        # magnitude = np.abs(Sxx)
-        # phase = np.unwrap(np.angle(Sxx),axis=-2)
-        # np.save(os.path.join(os.path.join(store_data,filename[:-4]),"rate_"+ filename[:-4]),rate)
-        # np.save(os.path.join(os.path.join(store_data,filename[:-4]),"freq_"+ filename[:-4]),f)
-        # np.save(os.path.join(os.path.join(store_data,filename[:-4]),"time_"+ filename[:-4]),t)
-        # np.save(os.path.join(os.path.join(store_data,filename[:-4]),"magnitude_"+ filename[:-4]),magnitude)
-        # np.save(os.path.join(os.path.join(store_data,filename[:-4]),"phase_"+ filename[:-4]),phase)
-    # try:
-    #     os.mkdir(os.path.join(store_data,"test"))
-    # except:
-    #     pass
-    # i = 0
-    # for file_name in mixtures_list_test:
-    #     _, song_name = os.path.split(file_name)
-    #     prepData(os.path.join(store_data, "test"),"mixture",song_name,mix_test[i],rate)
-    #     prepData(os.path.join(store_data, "test"),"vocals",song_name,vocals_test[i],rate)
-    #     prepData(os.path.join(store_data, "test"),"noise",song_name,bgm_test[i],rate)
-    #     i += 1
 
 def reConstructSound(filename,magnitude,phase,fs):
     Zxx = magnitude * np.exp(1j * phase)
     t2, xrec = signal.istft(Zxx, fs)
     scipy.io.wavfile.write(filename,fs,xrec)
+
+def reConstructWav(size,magnitude,phase):
+    """require input wavform's shape to do the differentiable reconstruction"""
+    magnitude = torch.from_numpy(np.expand_dims(magnitude, axis=0)).float()
+    phase = torch.from_numpy(np.expand_dims(phase, axis=0)).float()
+    stft = STFT(size=size, magnitude=magnitude, phase=phase)
+    xrec = stft(inv=True)[0][0]
+    return xrec
 
 
 class DSD100Dataset(Dataset):
