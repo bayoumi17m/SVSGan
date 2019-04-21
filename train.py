@@ -1,18 +1,19 @@
 import numpy as np
 import tqdm
+import os
 import utils
 from model import SVSGan
 from tensorboardX import SummaryWriter
 import torch
 from torch.autograd import grad as torch_grad
 
-from graphviz import Digraph
+# from graphviz import Digraph
 import torch
 from torch.autograd import Variable
 
 
 # make_dot was moved to https://github.com/szagoruyko/pytorchviz
-from torchviz import make_dot
+# from torchviz import make_dot
 
 def _gradient_penalty_centered_(c_real, model, gp_weight, center=0.):
     B = c_real[0].size(0)
