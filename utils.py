@@ -94,6 +94,10 @@ def prepareDataFiles(store_data,song_name,mix_path,vocal_path,bgm_path):
     vocal_rate, vocal = scipy.io.wavfile.read(vocal_path)
     bgm_rate, bgm = scipy.io.wavfile.read(bgm_path)
 
+    # Loop through wave form and zero out any values that are close to zero so that
+    # there are no points that will explode into large values.
+    # Need to check effect on Spectrum, since loss is done with the spectrums rather
+    # than the waveforms themselves
 
     for stype, data, rate in zip(["mixture","vocal","noise"],[mixture,vocal,bgm],[mix_rate,vocal_rate,bgm_rate]):
         path = os.path.join(os.path.join(store_data,song_name),stype)
@@ -124,7 +128,7 @@ def DataSetCleaner(dataroot,store_data,args):
             else:
                 song_names.append(file[:-9])
 
-    for song in song_names:
+    for song in tqdm.tqdm(song_names):
         vocal_path = os.path.join(dataroot,song + ".stem_vocals.wav")
         bgm_path = os.path.join(dataroot,song + ".stem_accompaniment.wav")
         mix_path = os.path.join(dataroot,song + ".stem_mix.wav")
