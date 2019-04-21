@@ -4,12 +4,13 @@ import numpy as np
 from torch.autograd import Variable
 
 class STFT(torch.nn.Module):
-    def __init__(self, input_data, magnitude, phase, filter_length=1000, hop_length=500):
+    def __init__(self, filter_length=1024, hop_length=512, **kwargs):
         super(STFT, self).__init__()
-        
-        self.input_data = input_data
-        self.magnitude = magnitude
-        self.phase = phase
+        self.input_data = kwargs.get('input_data')
+        self.size = kwargs.get('size')
+        self.magnitude = kwargs.get('magnitude')
+        self.phase = kwargs.get('phase')
+        self.inv = kwargs.get('inv')
         self.filter_length = filter_length
         self.hop_length = hop_length
         self.forward_transform = None
@@ -25,10 +26,29 @@ class STFT(torch.nn.Module):
         self.register_buffer('forward_basis', forward_basis.float())
         self.register_buffer('inverse_basis', inverse_basis.float())
 
+    def transform(self, input_data):
+            num_batches = input_data.size(0)
+            num_samples = input_data.size(1)
+
+            self.num_samples = num_samples
+
+            input_data = input_data.view(num_batches, 1, num_samples)
+            forward_transform = F.conv1d(input_data,
+                                         Variable(self.forward_basis, requires_grad=False),
+                                         stride = self.hop_length,
+                                         padding = self.filter_length)
+            cutoff = int((self.filter_length / 2) + 1)
+            real_part = forward_transform[:, :cutoff, :]
+            imag_part = forward_transform[:, cutoff:, :]
+
+            magnitude = torch.sqrt(real_part**2 + imag_part**2)
+            phase = torch.autograd.Variable(torch.atan2(imag_part.data, real_part.data))
+            print(magnitude.shape)
+            print(phase.shape)
+            return magnitude, phase
 
     def inverse(self, magnitude, phase):
-        num_samples = self.input_data.size(1)
-
+        num_samples = self.size
         self.num_samples = num_samples
         recombine_magnitude_phase = torch.cat([magnitude*torch.cos(phase),
                                                magnitude*torch.sin(phase)], dim=1)
@@ -41,6 +61,9 @@ class STFT(torch.nn.Module):
         inverse_transform = inverse_transform[:, :, :self.num_samples]
         return inverse_transform
 
-    def forward(self):
-        reconstruction = self.inverse(self.magnitude, self.phase)
-        return reconstruction
+    def forward(self, inv=False):
+        if (inv):
+            result = self.inverse(self.magnitude, self.phase)
+        else:
+            result = self.transform(self.input_data)
+        return result
