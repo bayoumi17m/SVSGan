@@ -39,7 +39,7 @@ def step(model, opt, data, step, writer, args):
     writer.add_scalar('pretrain/noise_loss', noise_recon_loss.cpu().detach().item(), step)
     writer.add_scalar('pretrain/loss', loss.cpu().detach().item(), step)
 
-    return loss.cpu().detach().item()
+    return vocal_recon_loss.cpu().detach().item(), noise_recon_loss.cpu().detach().item(), loss.cpu().detach().item()
 
 
 def validate(model, loader, epoch, writer):
@@ -152,17 +152,33 @@ if __name__ == "__main__":
     start_epoch = 0
     for epoch_idx in range(args.epochs):
         epoch = start_epoch + epoch_idx
+        epoch_loss = 0
+        epoch_vocal_recon_loss = 0
+        epoch_noise_recon_loss = 0
         for b_idx, data in tqdm.tqdm(enumerate(tr_loader)):
             step_num = epoch_idx * len(tr_loader) + b_idx
-            loss = step(model, opt, data, step_num, writer, args)
+            vocal_l, noise_l, loss = step(model, opt, data, step_num, writer, args) 
+            epoch_vocal_recon_loss += vocal_l
+            epoch_noise_recon_loss += noise_l
+            epoch_loss +=  loss
+          
             if (b_idx + 1) % args.log_step == 0:
                 print("Epoch [% 2d/% 2d] Batch [% 2d/% 2d] Loss %2.5f"\
                       %(epoch, args.epochs, b_idx, len(tr_loader), loss))
+        
+        print("Epoch loss for epoch idx:%s"%epoch_idx)
+        print(epoch_loss)
+     
+        writer.add_scalar('pretrain/epoch_vocal_loss', epoch_vocal_recon_loss, epoch_idx)
+        writer.add_scalar('pretrain/epoch_noise_loss', epoch_noise_recon_loss, epoch_idx)
+        writer.add_scalar('pretrain/epoch_loss', epoch_loss, epoch_idx)
+
 
         if (epoch_idx + 1) % args.val_freq == 0:
             print("Val for epoch idx: %s"%epoch_idx)
             res = validate(model, val_loader, epoch, writer)
             print(res)
+           
 
         if (epoch_idx + 1) % args.save_freq == 0:
             save(model, opt, save_dir, epoch, args)
