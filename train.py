@@ -1,5 +1,6 @@
 import numpy as np
 import tqdm
+import time
 import utils
 from model import SVSGan
 from tensorboardX import SummaryWriter
@@ -116,7 +117,12 @@ if __name__ == '__main__':
 
     data_loader = utils.get_loader(args)
 
-
+    # Writer, and save directory
+    ts = int(time.time())
+    if args.log_dir is None:
+        args.log_dir = "run-%d"%ts
+    else:
+        args.log_dir = "%s-%d"%(args.log_dir, ts)
     writer = SummaryWriter(log_dir=os.path.join("runs", "train", args.log_dir))
     train_gan(model, data_loader['train'], 10000, args, writer)
 
