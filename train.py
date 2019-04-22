@@ -17,15 +17,15 @@ from torch.autograd import Variable
 # from torchviz import make_dot
 
 def _gradient_penalty_centered_(c_real, model, gp_weight, center=0.):
-    B = c_real[0].size(0)
+    B = c_real.size(0)
     #print(c_real[0].requires_grad)
-    c_real[0].requires_grad_(True)
+    c_real.requires_grad_(True)
     #c_real[1].requires_grad_(True)
     # Calculate gradients of probabilities with respect to examples
     #make_dot(d).view()
-    d = model.D(c_real[0], c_real[1])
+    d = model.D(c_real)
     gradients = torch_grad(
-            outputs=d, inputs=c_real[0],
+            outputs=d, inputs=c_real,
             grad_outputs=torch.ones(d.size()).cuda(),
             create_graph=True, retain_graph=True)[0]
 
@@ -45,7 +45,7 @@ def gan_training(model, step, vocal_real, bgm_real, in_mixture, phase, size, gp_
 
     D_real = model.D(vocal_real)
     D_real_loss = model.bce(D_real, model.real[:D_real.shape[0], :, :])
-    gp = _gradient_penalty_centered_([vocal_real, bgm_real], model, args.gp_weight, center=gp_center)
+    gp = _gradient_penalty_centered_(vocal_real, model, args.gp_weight, center=gp_center)
 
     D_fake = model.D(vocal_fake)
     D_fake_loss = model.bce(D_fake, model.fake[:D_fake.shape[0],:,:])
