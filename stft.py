@@ -54,6 +54,7 @@ class STFT(torch.nn.Module):
         for m, p in zip(magnitude, phase):
             m = m.unsqueeze(0)
             p = p.unsqueeze(0)
+            # print("m shape: %s" %(str(m.shape)))
             recombine_magnitude_phase = torch.cat([m*torch.cos(p),
                                                    m*torch.sin(p)], dim=1)
 
@@ -61,10 +62,11 @@ class STFT(torch.nn.Module):
                                                    Variable(self.inverse_basis, requires_grad=False),
                                                    stride=self.hop_length,
                                                    padding=0)
+            # print("inv shape: %s" %(str(inverse_transform.shape)))
             inverse_transform = inverse_transform[:, :, self.filter_length:]
             inverse_transform = inverse_transform[:, :, :self.num_samples]
             inverse_wav.append(inverse_transform)
-        inverse_wav = torch.stack[inverse_wav]
+        inverse_wav = torch.stack(inverse_wav)
         return inverse_wav
     def forward(self, inv=False):
         if (inv):
