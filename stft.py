@@ -52,6 +52,8 @@ class STFT(torch.nn.Module):
         self.num_samples = num_samples
         inverse_wav = []
         for m, p in zip(magnitude, phase):
+            m = m.unsqueeze(0)
+            p = p.unsqueeze(0)
             recombine_magnitude_phase = torch.cat([m*torch.cos(p),
                                                    m*torch.sin(p)], dim=1)
 
