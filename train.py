@@ -40,6 +40,7 @@ def _gradient_penalty_centered_(c_real, model, gp_weight, center=0.):
 
 def gan_training(model, step, vocal_real, bgm_real, in_mixture, phase, size, gp_center, writer):
     model.dis_optim.zero_grad()
+    # print("mixture magnitude: %s" % (str(in_mixture.size())))    
 
     vocal_fake, bgm_fake = model.G(in_mixture)
 
@@ -60,10 +61,18 @@ def gan_training(model, step, vocal_real, bgm_real, in_mixture, phase, size, gp_
 
     D_fake = model.D(vocal_fake)
 
-    vocal_fake_wav = utils.reConstructWav(size, vocal_fake.cpu().detach().numpy(), phase)
-    bgm_fake_wav = utils.reConstructWav(size, bgm_fake.cpu().detach().numpy(), phase)
+    vocal_fake = vocal_fake.transpose(1,2).contiguous()
+    bgm_fake = bgm_fake.transpose(1,2).contiguous()
+    phase = phase.transpose(1,2).contiguous()
+    in_mix = in_mixture.transpose(1,2).contiguous()
+    # print("vocal fake magnitude: %s" % (str(vocal_fake.size())))
+    # print("noise fake magnitude: %s" % (str(bgm_fake.size())))
+    # print("phase: %s" % (str(phase.size())))      
+
+    vocal_fake_wav = utils.reConstructWav(size, vocal_fake.cpu().detach(), phase.cpu().detach())
+    bgm_fake_wav = utils.reConstructWav(size, bgm_fake.cpu().detach(), phase.cpu().detach())
     mixture_fake_wav = vocal_fake_wav + bgm_fake_wav
-    mixture_wav = utils.reConstructWav(size, in_mixture.cpu().detach().numpy(), phase)
+    mixture_wav = utils.reConstructWav(size, in_mix.cpu().detach(), phase.cpu().detach())
 
     rec_loss = model.l2(mixture_wav, mixture_fake_wav)
 

@@ -55,6 +55,7 @@ def get_args():
     parser.add_argument('--inD', type=int, default=513, help='size of the input features of the discriminator')
     parser.add_argument('--train', action="store_true", default=True, help='Training mode')
     parser.add_argument('--rate', default=44100, help='Sampling rate for STFT')
+    parser.add_argument('--delta', default=1e-4, help='Min Value in Reconstruction to prevent exploding loss')
     args = parser.parse_args()
 
     return args
@@ -128,8 +129,8 @@ def reConstructSound(filename,magnitude,phase,fs):
 
 def reConstructWav(size,magnitude,phase):
     """require input wavform's shape to do the differentiable reconstruction"""
-    magnitude = torch.from_numpy(np.expand_dims(magnitude, axis=0)).float()
-    phase = torch.from_numpy(np.expand_dims(phase, axis=0)).float()
+    # magnitude = torch.from_numpy(np.expand_dims(magnitude, axis=0)).float()
+    # phase = torch.from_numpy(np.expand_dims(phase, axis=0)).float()
     stft = STFT(size=size, magnitude=magnitude, phase=phase)
     xrec = stft(inv=True)[0][0]
     return xrec
