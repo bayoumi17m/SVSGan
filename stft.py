@@ -61,7 +61,7 @@ class STFT(torch.nn.Module):
                                                    padding=0)
             inverse_transform = inverse_transform[:, :, self.filter_length:]
             inverse_transform = inverse_transform[:, :, :self.num_samples]
-            inverse_wav.append[inverse_transform]
+            inverse_wav.append(inverse_transform)
         inverse_wav = torch.stack[inverse_wav]
         return inverse_wav
     def forward(self, inv=False):
