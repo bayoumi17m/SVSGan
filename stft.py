@@ -50,17 +50,20 @@ class STFT(torch.nn.Module):
     def inverse(self, magnitude, phase):
         num_samples = self.size
         self.num_samples = num_samples
-        recombine_magnitude_phase = torch.cat([magnitude*torch.cos(phase),
-                                               magnitude*torch.sin(phase)], dim=1)
+        inverse_wav = []
+        for m, p in zip(magnitude, phase):
+            recombine_magnitude_phase = torch.cat([m*torch.cos(p),
+                                                   m*torch.sin(p)], dim=1)
 
-        inverse_transform = F.conv_transpose1d(recombine_magnitude_phase,
-                                               Variable(self.inverse_basis, requires_grad=False),
-                                               stride=self.hop_length,
-                                               padding=0)
-        inverse_transform = inverse_transform[:, :, self.filter_length:]
-        inverse_transform = inverse_transform[:, :, :self.num_samples]
-        return inverse_transform
-
+            inverse_transform = F.conv_transpose1d(recombine_magnitude_phase,
+                                                   Variable(self.inverse_basis, requires_grad=False),
+                                                   stride=self.hop_length,
+                                                   padding=0)
+            inverse_transform = inverse_transform[:, :, self.filter_length:]
+            inverse_transform = inverse_transform[:, :, :self.num_samples]
+            inverse_wav.append[inverse_transform]
+        inverse_wav = torch.stack[inverse_wav]
+        return inverse_wav
     def forward(self, inv=False):
         if (inv):
             result = self.inverse(self.magnitude, self.phase)
