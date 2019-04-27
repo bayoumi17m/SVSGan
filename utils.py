@@ -31,7 +31,7 @@ def get_args():
     parser.add_argument('--log-step', type=int, default=10, help='Logging step to the terminal.')
     parser.add_argument('--save-step', type=int, default=1, help='Number of steps to save it.')
     parser.add_argument('--val_freq', type=int, default=1, help='Validation frequency (unit: epochs).')
-    parser.add_argument('--batch_size', type=int, default=128, help='input batch size')
+    parser.add_argument('--batch_size', type=int, default=32, help='input batch size')
     parser.add_argument('--save_freq', type=int, default=1000, help='Saving frequency (unit: epochs).')
     parser.add_argument('--lrG', type=float, default=0.001,
             help='learning rate for, G_loss generator, default=0.001')
@@ -55,7 +55,7 @@ def get_args():
     parser.add_argument('--inD', type=int, default=513, help='size of the input features of the discriminator')
     parser.add_argument('--train', action="store_true", default=True, help='Training mode')
     parser.add_argument('--rate', default=44100, help='Sampling rate for STFT')
-    parser.add_argument('--delta', default=1e-4, help='Min Value in Reconstruction to prevent exploding loss')
+    parser.add_argument('--delta', default=1e-8, help='Min Value in Reconstruction to prevent exploding loss')
     args = parser.parse_args()
 
     return args

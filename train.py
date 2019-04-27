@@ -95,6 +95,8 @@ def train_gan(model, data_loader, epochs, args, writer):
             in_mixture = in_mixture_dic['magnitude'].float().cuda()
             mixture_phase = in_mixture_dic['phase'].float().cuda()
             size = in_mixture_dic['size']
+            # print("magnitude: %s" %(str(in_mixture.size())))
+            # print("size: %s" %(str(size)))
 
             D_loss, G_loss, gp = gan_training(model, step, vocal_real, bgm_real, in_mixture, mixture_phase, size, args.gp_center, writer)
             step += 1
