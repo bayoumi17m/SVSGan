@@ -7,11 +7,13 @@ import numpy as np
 import scipy
 from scipy import signal
 import scipy.io.wavfile
-from scipy.io.wavfile import read
+from scipy.io.wavfile import read, write
 #from pydub import AudioSegment
 import fnmatch
 import tqdm
 from stft import STFT
+
+from metric import compute_results_from_directory
 
 def get_args():
     import argparse
@@ -20,6 +22,7 @@ def get_args():
     parser.add_argument('--train_directory', type=str, default='Data/Data_Store', help='path to dataset')
     parser.add_argument('--val_directory', type=str, default='Data/Data_Store', help='path to dataset')
     parser.add_argument('--test_directory', type=str, default='Data/Data_Store', help='path to dataset')
+    parser.add_argument('--metric_directory', type=str, default='Data/Data_Store', help='path to dataset')
     parser.add_argument('--log-dir', type=str, default=None, help='Logging directory (default None)')
     parser.add_argument('--store_data', type=str, default='./data/', help='path to dataset')
     parser.add_argument('--resume', type=str, default=None, help='File to resume')
@@ -104,7 +107,7 @@ def prepareDataFiles(store_data,song_name,mix_path,vocal_path,bgm_path):
 def DataSetCleaner(dataroot,store_data,args):
     # mixtures_list_train, sources_list_train, mixtures_list_test, sources_list_test, mix_train, \
     #     vocals_train, bgm_train, mix_test, vocals_test, bgm_test = get_train_test(args)
-    
+
     # Incomplete Reading in Method - Wav Data
     files = os.listdir(dataroot)
     song_names = []
@@ -258,5 +261,68 @@ def get_train_test(args):
     mixtures_list_test, sources_list_test = get_DSD_files('testing',dataset_paths)
     mix_test, vocals_test, bgm_test = DSD2np((mixtures_list_test, sources_list_test))
     return mixtures_list_train, sources_list_train, mixtures_list_test, sources_list_test, mix_train, vocals_trian, bgm_train, mix_test, vocals_test, bgm_test
+
+def inference(wav, model, sample_length):
+
+    vocal = []
+    bgm = []
+    for i in range(len(wav)//sample_length):
+        start = i*sample_length
+        end = min((i+1)*sample_length, len(wav))
+
+        in_wav = torch.autograd.Variable(torch.FloatTensor(wav[start:end]), requires_grad=False).cuda().unsqueeze(0)
+        stft = STFT(input_data=in_wav)
+        magnitude, phase = stft()
+        magnitude = torch.squeeze(magnitude)
+        phase = torch.squeeze(phase)
+        size = in_wav.size(1)
+
+        vocal_recon, noise_recon = model(magnitude)
+
+        vocal.append(utils.reConstructWav(size, vocal_recon.cpu().detach(), phase.cpu().detach()))
+        bgm.append(utils.reConstructWav(size, noise_recon.cpu().detach(), phase.cpu().detach()))
+
+
+    return torch.cat(vocal).numpy(), torch.cat(bgm).numpy()
+
+def log_score(dir, model, sample_length, epoch, writer = None):
+
+    files = os.listdir(dir)
+    song_names = []
+    for file in files:
+        if len(file) > 5 and file[-4:] == ".mp4":
+            if file[:-4] in song_names:
+                continue
+            else:
+                song_names.append(file[:-9])
+
+    for song in song_names:
+        vocal_path = os.path.join(dataroot,song + ".stem_vocals.wav")
+        bgm_path = os.path.join(dataroot,song + ".stem_accompaniment.wav")
+        mix_path = os.path.join(dataroot,song + ".stem_mix.wav")
+
+
+
+        rate, wav = read(mix_path)
+        vocal_pred, bgm_pred = inference(wav, model, sample_length)
+
+        write(os.path.join(dataroot,song + ".stem_vocals_pred.wav"), vocal_pred, rate)
+        write(os.path.join(dataroot,song + ".stem_accompaniment_pred.wav")，bgm_pred, rate)
+
+
+        estimated_filenames, all_sdr, all_isr, all_sir, all_sar = compute_results_from_directory(dir, '', '_pred')
+
+        for i in range(len(all_sdr)):
+            # Edit the following logic to take windows into account if windows are ever used.
+            sdr, isr, sir, sar = float(all_sdr[i]), float(all_isr[i]), float(all_sir[i]), float(all_sar[i])
+            print(estimated_filenames[i])
+            print('SDR: {:.3f} \t ISR: {:.3f} \t SIR {:.3f} \t SAR: {:.3f}'.format(sdr, isr, sir, sar))
+
+            if writer != None:
+                 writer.add_scalar("val/SDR_"+ estimated_filenames[i], sdr, epoch)
+                 writer.add_scalar("val/ISR_"+ estimated_filenames[i], isr, epoch)
+                 writer.add_scalar("val/SIR_"+ estimated_filenames[i], sir, epoch)
+                 writer.add_scalar("val/SAR_"+ estimated_filenames[i], sar, epoch)
+
 
 
