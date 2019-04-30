@@ -94,7 +94,7 @@ def validate(model, loader, epoch, writer, args):
         writer.add_scalar("val/vocal_loss", vocal_recon_loss.cpu().detach().item(), epoch)
         writer.add_scalar("val/noise_loss", noise_recon_loss.cpu().detach().item(), epoch)
 
-        log_score(args.metric_directory, args.sample_length, epoch, writer)
+        utils.log_score(args.metric_directory, model, args.sample_length, epoch, writer)
 
     return {
         'vocal' : vocal_recon_loss.cpu().detach().item(),

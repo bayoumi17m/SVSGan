@@ -43,8 +43,8 @@ class STFT(torch.nn.Module):
 
             magnitude = torch.sqrt(real_part**2 + imag_part**2)
             phase = torch.autograd.Variable(torch.atan2(imag_part.data, real_part.data))
-            print(magnitude.shape)
-            print(phase.shape)
+            #print(magnitude.shape)
+            #print(phase.shape)
             return magnitude, phase
 
     def inverse(self, magnitude, phase):

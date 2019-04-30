@@ -12,8 +12,9 @@ from scipy.io.wavfile import read, write
 import fnmatch
 import tqdm
 from stft import STFT
-
-from metric import compute_results_from_directory
+import sys
+sys.path.append('/home/qh53/IntSys-Vocal-Isolation')
+from metrics import compute_results_from_directory
 
 def get_args():
     import argparse
@@ -135,7 +136,8 @@ def reConstructWav(size,magnitude,phase):
     # magnitude = torch.from_numpy(np.expand_dims(magnitude, axis=0)).float()
     # phase = torch.from_numpy(np.expand_dims(phase, axis=0)).float()
     stft = STFT(size=size, magnitude=magnitude, phase=phase)
-    xrec = stft(inv=True)[0][0]
+    xrec = stft(inv=True)
+    # print(xrec.shape)  
     return xrec
 
 
@@ -266,21 +268,31 @@ def inference(wav, model, sample_length):
 
     vocal = []
     bgm = []
-    for i in range(len(wav)//sample_length):
-        start = i*sample_length
+    print(len(wav))
+    print(sample_length)
+    batch_size = 2**13
+    for i in tqdm.tqdm(range(len(wav)//(sample_length*batch_size))):
+        start = i*sample_length*batch_size
         end = min((i+1)*sample_length, len(wav))
-
-        in_wav = torch.autograd.Variable(torch.FloatTensor(wav[start:end]), requires_grad=False).cuda().unsqueeze(0)
-        stft = STFT(input_data=in_wav)
+        small_wavs = np.stack([wav[start + j* sample_length :start + (j + 1 )* sample_length] for j in range(batch_size) ])
+        #print(small_wavs.shape) 
+        in_wav = torch.autograd.Variable(torch.FloatTensor(small_wavs), requires_grad=False).cuda()
+        #print(in_wav.shape)
+        stft = STFT(input_data=in_wav).cuda()
+        
         magnitude, phase = stft()
         magnitude = torch.squeeze(magnitude)
         phase = torch.squeeze(phase)
-        size = in_wav.size(1)
+        size = [in_wav.size(1) for _ in range(in_wav.size(0)) ]
 
-        vocal_recon, noise_recon = model(magnitude)
+        #print(magnitude.shape)
+        vocal_recon, noise_recon = model(magnitude.transpose(1,2))
 
-        vocal.append(utils.reConstructWav(size, vocal_recon.cpu().detach(), phase.cpu().detach()))
-        bgm.append(utils.reConstructWav(size, noise_recon.cpu().detach(), phase.cpu().detach()))
+        #print(vocal_recon.shape)
+        #print(noise_recon.shape)i
+        
+        vocal.append(reConstructWav(size, vocal_recon.transpose(1,2).cpu().detach(), phase.cpu().detach()).view(-1))
+        bgm.append(reConstructWav(size, noise_recon.transpose(1,2).cpu().detach(), phase.cpu().detach()).view(-1))
 
 
     return torch.cat(vocal).numpy(), torch.cat(bgm).numpy()
@@ -297,20 +309,21 @@ def log_score(dir, model, sample_length, epoch, writer = None):
                 song_names.append(file[:-9])
 
     for song in song_names:
-        vocal_path = os.path.join(dataroot,song + ".stem_vocals.wav")
-        bgm_path = os.path.join(dataroot,song + ".stem_accompaniment.wav")
-        mix_path = os.path.join(dataroot,song + ".stem_mix.wav")
+        vocal_path = os.path.join(dir,song + ".stem_vocals.wav")
+        bgm_path = os.path.join(dir,song + ".stem_accompaniment.wav")
+        mix_path = os.path.join(dir,song + ".stem_mix.wav")
 
 
 
         rate, wav = read(mix_path)
         vocal_pred, bgm_pred = inference(wav, model, sample_length)
 
-        write(os.path.join(dataroot,song + ".stem_vocals_pred.wav"), vocal_pred, rate)
-        write(os.path.join(dataroot,song + ".stem_accompaniment_pred.wav")，bgm_pred, rate)
+        write(os.path.join(dir,song + ".stem_vocals_pred_"+str(epoch)+".wav"), rate, vocal_pred)
+        
+        write(os.path.join(dir,song + ".stem_accompaniment_pred_"+str(epoch)+".wav"), rate,  bgm_pred)
 
 
-        estimated_filenames, all_sdr, all_isr, all_sir, all_sar = compute_results_from_directory(dir, '', '_pred')
+        estimated_filenames, all_sdr, all_isr, all_sir, all_sar = compute_results_from_directory(dir, '_pred_' + str(epoch), "")
 
         for i in range(len(all_sdr)):
             # Edit the following logic to take windows into account if windows are ever used.
