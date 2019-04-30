@@ -295,6 +295,7 @@ def inference(wav, model, sample_length):
         bgm.append(reConstructWav(size, noise_recon.transpose(1,2).cpu().detach(), phase.cpu().detach()).view(-1))
 
 
+    print(torch.cat(vocal).shape)
     return torch.cat(vocal).numpy(), torch.cat(bgm).numpy()
 
 def log_score(dir, model, sample_length, epoch, writer = None):
@@ -317,13 +318,14 @@ def log_score(dir, model, sample_length, epoch, writer = None):
 
         rate, wav = read(mix_path)
         vocal_pred, bgm_pred = inference(wav, model, sample_length)
-
-        write(os.path.join(dir,song + ".stem_vocals_pred_"+str(epoch)+".wav"), rate, vocal_pred)
+        write(os.path.join('test',song + ".stem_vocals_true.wav"), rate, wav[:len(vocal_pred)])
+        write(os.path.join('test',song + ".stem_vocals_pred_"+str(epoch)+".wav"), rate, vocal_pred)
         
-        write(os.path.join(dir,song + ".stem_accompaniment_pred_"+str(epoch)+".wav"), rate,  bgm_pred)
+        
+        #write(os.path.join('test',song + ".stem_accompaniment_pred_"+str(epoch)+".wav"), rate,  bgm_pred)
 
 
-        estimated_filenames, all_sdr, all_isr, all_sir, all_sar = compute_results_from_directory(dir, '_pred_' + str(epoch), "")
+        estimated_filenames, all_sdr, all_isr, all_sir, all_sar = compute_results_from_directory('test', '_pred_' + str(epoch), "_true")
 
         for i in range(len(all_sdr)):
             # Edit the following logic to take windows into account if windows are ever used.
