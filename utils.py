@@ -136,6 +136,7 @@ def reConstructWav(size,magnitude,phase):
     # magnitude = torch.from_numpy(np.expand_dims(magnitude, axis=0)).float()
     # phase = torch.from_numpy(np.expand_dims(phase, axis=0)).float()
     stft = STFT(size=size, magnitude=magnitude, phase=phase)
+    stft = stft.cuda()
     xrec = stft(inv=True)
     # print(xrec.shape)  
     return xrec

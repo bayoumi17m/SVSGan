@@ -69,10 +69,10 @@ def gan_training(model, step, vocal_real, bgm_real, in_mixture, phase, size, gp_
     # print("noise fake magnitude: %s" % (str(bgm_fake.size())))
     # print("phase: %s" % (str(phase.size())))      
 
-    vocal_fake_wav = utils.reConstructWav(size, vocal_fake.cpu().detach(), phase.cpu().detach())
-    bgm_fake_wav = utils.reConstructWav(size, bgm_fake.cpu().detach(), phase.cpu().detach())
+    vocal_fake_wav = utils.reConstructWav(size, vocal_fake, phase)
+    bgm_fake_wav = utils.reConstructWav(size, bgm_fake, phase)
     mixture_fake_wav = vocal_fake_wav + bgm_fake_wav
-    mixture_wav = utils.reConstructWav(size, in_mix.cpu().detach(), phase.cpu().detach())
+    mixture_wav = utils.reConstructWav(size, in_mix, phase)
 
     rec_loss = model.l2(mixture_wav, mixture_fake_wav)
 
