@@ -74,7 +74,7 @@ def gan_training(model, step, vocal_real, bgm_real, in_mixture, phase, size, gp_
     mixture_fake_wav = vocal_fake_wav + bgm_fake_wav
     mixture_wav = utils.reConstructWav(size, in_mix, phase)
 
-    rec_loss = model.l2(mixture_wav, mixture_fake_wav)
+    rec_loss = model.l2(mixture_fake_wav, mixture_wav)
 
     G_loss = model.bce(D_fake, model.real[:D_fake.shape[0], :, :])
     G_loss = G_loss + rec_loss
