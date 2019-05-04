@@ -108,15 +108,15 @@ def save(model, opt, save_dir, epoch, args):
     # Save the current epoch
     save_filename = os.path.join(save_dir, "checkpoint-%d.pt"%epoch)
     torch.save({
-        'model' : model.state_dict(),
-        'opt'   : opt.state_dict()
+        'gnet' : model.state_dict(),
+        'gopt'   : opt.state_dict()
     }, save_filename)
 
     # Save the most recent
     save_filename = os.path.join(save_dir, "checkpoint.pt")
     torch.save({
-        'model' : model.state_dict(),
-        'opt'   : opt.state_dict()
+        'gnet' : model.state_dict(),
+        'gopt'   : opt.state_dict()
     }, save_filename)
 
 
