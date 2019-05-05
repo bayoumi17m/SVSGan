@@ -108,8 +108,8 @@ def train_gan(model, data_loader, epochs, args, writer):
                       %(epoch, epochs, D_loss, G_loss, gp))
 
 
-            #if step % 1000 == 0:
-            #    model.save('checkpoint_'+ str(step))
+        if step % 1000 == 0:
+            model.save('checkpoint_'+ str(step))
                 # TODO: eval
 
 
