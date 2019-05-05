@@ -15,6 +15,7 @@ from stft import STFT
 import sys
 sys.path.append('/home/qh53/IntSys-Vocal-Isolation')
 from metrics import compute_results_from_directory
+import librosa
 
 def get_args():
     import argparse
@@ -60,6 +61,7 @@ def get_args():
     parser.add_argument('--train', action="store_true", default=True, help='Training mode')
     parser.add_argument('--rate', default=44100, help='Sampling rate for STFT')
     parser.add_argument('--delta', default=1e-8, help='Min Value in Reconstruction to prevent exploding loss')
+    parser.add_argument('--clip', default=10.0,help='Max Value allowed before Gradient CLipping')
     args = parser.parse_args()
 
     return args
@@ -73,9 +75,9 @@ def prepareDataFiles(store_data,song_name,mix_path,vocal_path,bgm_path):
     except:
         pass
 
-    mix_rate, mixture = scipy.io.wavfile.read(mix_path)
-    vocal_rate, vocal = scipy.io.wavfile.read(vocal_path)
-    bgm_rate, bgm = scipy.io.wavfile.read(bgm_path)
+    mixture, mix_rate = librosa.core.load(mix_path,sr=16000)
+    vocal, vocal_rate = librosa.core.load(vocal_path,sr=16000)
+    bgm, bgm_rate = librosa.core.load(bgm_path,sr=16000)
 
     # Loop through wave form and zero out any values that are close to zero so that
     # there are no points that will explode into large values.

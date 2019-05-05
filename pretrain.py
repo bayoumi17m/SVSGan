@@ -38,10 +38,13 @@ def step(model, opt, data, step, writer, args):
     noise_recon_loss = F.mse_loss(noise_recon/mix_spec, noi_spec/mix_spec)
     loss = args.vocal_recon_weight * vocal_recon_loss + args.noise_recon_weight * noise_recon_loss
 
+    torch.nn.utils.clip_grad.clip_grad_norm_(model.parameters(),args.clip)
     opt.zero_grad()
     loss.backward()
     opt.step()
 
+    #if loss > 1e6:
+    #    import pdb; pdb.set_trace()
     # LOG
     writer.add_scalar('pretrain/vocal_loss', vocal_recon_loss.cpu().detach().item(), step)
     writer.add_scalar('pretrain/noise_loss', noise_recon_loss.cpu().detach().item(), step)
@@ -172,7 +175,9 @@ if __name__ == "__main__":
 
             if (b_idx + 1) % args.log_step == 0:
                 print("Epoch [% 2d/% 2d] Batch [% 2d/% 2d] Loss %2.5f"\
-                      %(epoch, args.epochs, b_idx, len(tr_loader), loss))
+                  %(epoch, args.epochs, b_idx, len(tr_loader), loss))
+            #if loss > 1e6:
+            #    import pdb; pdb.set_trace()
 
         print("Epoch loss for epoch idx:%s"%epoch_idx)
         print(epoch_loss)
