@@ -134,13 +134,10 @@ def reConstructSound(filename,magnitude,phase,fs):
     scipy.io.wavfile.write(filename,fs,xrec)
 
 def reConstructWav(size,magnitude,phase):
-    """require input wavform's shape to do the differentiable reconstruction"""
-    # magnitude = torch.from_numpy(np.expand_dims(magnitude, axis=0)).float()
-    # phase = torch.from_numpy(np.expand_dims(phase, axis=0)).float()
+    """the differentiable reconstruction for mixture spectrogram with vocal and noise"""
     stft = STFT(size=size, magnitude=magnitude, phase=phase)
     stft = stft.cuda()
-    xrec = stft(inv=True)
-    # print(xrec.shape)  
+    xrec = stft(inv=True) 
     return xrec
 
 

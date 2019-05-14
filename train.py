@@ -1,4 +1,3 @@
-import numpy as np
 import tqdm
 import time
 import os
@@ -9,18 +8,16 @@ import torch
 from torch.autograd import grad as torch_grad
 
 # from graphviz import Digraph
-import torch
-from torch.autograd import Variable
 
 
 # make_dot was moved to https://github.com/szagoruyko/pytorchviz
 # from torchviz import make_dot
 
 def _gradient_penalty_centered_(c_real, model, gp_weight, center=0.):
+    """Gradient penalty for the discriminator"""
     B = c_real.size(0)
-    #print(c_real[0].requires_grad)
     c_real.requires_grad_(True)
-    #c_real[1].requires_grad_(True)
+
     # Calculate gradients of probabilities with respect to examples
     #make_dot(d).view()
     d = model.D(c_real)
@@ -39,8 +36,8 @@ def _gradient_penalty_centered_(c_real, model, gp_weight, center=0.):
 
 
 def gan_training(model, step, vocal_real, bgm_real, in_mixture, phase, size, gp_center, writer):
+    """Train the SVSGAN for one batch iteration."""
     model.dis_optim.zero_grad()
-    # print("mixture magnitude: %s" % (str(in_mixture.size())))    
 
     vocal_fake, bgm_fake = model.G(in_mixture)
 
@@ -65,9 +62,6 @@ def gan_training(model, step, vocal_real, bgm_real, in_mixture, phase, size, gp_
     bgm_fake = bgm_fake.transpose(1,2).contiguous()
     phase = phase.transpose(1,2).contiguous()
     in_mix = in_mixture.transpose(1,2).contiguous()
-    # print("vocal fake magnitude: %s" % (str(vocal_fake.size())))
-    # print("noise fake magnitude: %s" % (str(bgm_fake.size())))
-    # print("phase: %s" % (str(phase.size())))      
 
     vocal_fake_wav = utils.reConstructWav(size, vocal_fake, phase)
     bgm_fake_wav = utils.reConstructWav(size, bgm_fake, phase)
@@ -84,26 +78,21 @@ def gan_training(model, step, vocal_real, bgm_real, in_mixture, phase, size, gp_
     return D_loss, G_loss, gp
 
 def train_gan(model, data_loader, epochs, args, writer):
-
+    """SVSGAN whole training process"""
     step = 0
     pbar = tqdm.trange(epochs, leave=False)
     for epoch in pbar:
-        # for batch_i, (in_mixture_dic, vocal_real_dic, bgm_real_dic) in tqdm.tqdm(enumerate(data_loader), leave=False):
         for batch_i, (in_mixture_dic, vocal_real_dic, bgm_real_dic) in enumerate(data_loader):
             vocal_real = vocal_real_dic['magnitude'].float().cuda()
             bgm_real = bgm_real_dic['magnitude'].float().cuda()
             in_mixture = in_mixture_dic['magnitude'].float().cuda()
             mixture_phase = in_mixture_dic['phase'].float().cuda()
             size = in_mixture_dic['size']
-            # print("magnitude: %s" %(str(in_mixture.size())))
-            # print("size: %s" %(str(size)))
 
             D_loss, G_loss, gp = gan_training(model, step, vocal_real, bgm_real, in_mixture, mixture_phase, size, args.gp_center, writer)
             step += 1
 
         if (epoch) % 10  == 0:
-            # print("Epoch [% 2d/% 2d] D_Loss %2.5f G_Loss %2.5f"\
-            #           %(epoch, epochs, D_loss, G_loss))
             pbar.set_description("Epoch [% 2d/% 2d] D_Loss %2.5f G_Loss %2.5f gp %2.5f"\
                       %(epoch, epochs, D_loss, G_loss, gp))
 
