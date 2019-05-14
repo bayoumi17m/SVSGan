@@ -1,0 +1,1 @@
+python train.py --train_directory=./data/ --workers=0 --resume_G=/home/qh53/SVSGan/checkpoints/pretrain/pretrain_Apr27-1557041860/checkpoint-999.pt --batch_size=64 --val_directory=./empty/ --test_directory=./empty/ --log-step=3 --lrG=${1}

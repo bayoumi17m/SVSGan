@@ -1,10 +1,8 @@
-import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 from torch.autograd import Variable
-import pickle
 import os
 
 class Generator(nn.Module):
@@ -12,7 +10,6 @@ class Generator(nn.Module):
     def __init__(self,args):
         super(Generator, self).__init__()
         """Docstring for Init of Generator"""
-        # We take in a vector of size 1024?
         self.args = args
         self.fc1 = nn.Conv1d(args.N_FFT,args.ngf,1)
         self.bn1 = nn.BatchNorm1d(args.ngf)
@@ -20,29 +17,20 @@ class Generator(nn.Module):
         self.bn2 = nn.BatchNorm1d(args.ngf)
         self.fc3 = nn.Conv1d(args.ngf,args.ngf,1)
         self.bn3 = nn.BatchNorm1d(args.ngf)
-        self.fc4 = nn.Conv1d(args.ngf,args.N_FFT,1)
+        self.fc4_1 = nn.Conv1d(args.ngf,args.N_FFT,1)
+        self.fc4_2 = nn.Conv1d(args.ngf,args.N_FFT,1)
 
 
     def forward(self,z):
         """Docstring for forward function"""
-        #z1 = 1 - z
         z = z.float().transpose(1,2).contiguous()
-        # x = self.fc1(z)
         x = F.relu(self.bn1(self.fc1(z)))
         x = F.relu(self.bn1(x))
         x = F.relu(self.bn2(self.fc2(x)))
         x = F.relu(self.bn3(self.fc3(x)))
-        x = torch.sigmoid(self.fc4(x))
-
-        # time-frequency masking
-#         print(x.max())
-#         print(x.min())
-        vocal = x * z
-        noise = (1 - x) * z
-
-        vocal = vocal.transpose(1,2)
-        noise = noise.transpose(1,2)
-        return vocal, noise
+        vocal = torch.exp(self.fc4_1(x))
+        noise = torch.exp(self.fc4_2(x))
+        return vocal.transpose(1,2), noise.transpose(1,2)
 
 
 class Discriminator(nn.Module):
@@ -58,12 +46,9 @@ class Discriminator(nn.Module):
         self.bn3 = nn.BatchNorm1d(args.ndf)
         self.fc4 = nn.Conv1d(args.ndf, 1,1)
 
-    def forward(self,y1,y2):
+    def forward(self,x):
         """forward function that takes two sources from the generator"""
-        y1 = y1.transpose(1,2).contiguous()
-        y2 = y2.transpose(1,2).contiguous()
-
-        x = torch.cat([y1, y2], 1)
+        x = x.transpose(1,2).contiguous()
         x = F.leaky_relu(self.fc1(x), 0.2)
         x = F.leaky_relu(self.bn2(self.fc2(x)), 0.2)
         x = F.leaky_relu(self.bn3(self.fc3(x)), 0.2)
@@ -90,6 +75,7 @@ class SVSGan(object):
 
 
     def save(self, name):
+        """Save the model"""
         save_dir = self.save_dir
 
         if not os.path.exists(save_dir):
@@ -109,11 +95,13 @@ class SVSGan(object):
 
 
     def load_G(self, G_checkpoint):
+        """Load the generator checkpoints"""
         checkpoint = torch.load(G_checkpoint)
         self.G.load_state_dict(checkpoint['gnet'])
         self.gen_optim.load_state_dict(checkpoint['gopt'])
 
     def load_D( self, D_checkpoint):
+        """Load the discriminator checkpoints"""
         checkpoint = torch.load(D_checkpoint)
         self.D.load_state_dict(checkpoint['dnet'])
         self.dis_optim.load_state_dict(checkpoint['gopt'])

@@ -1,0 +1,76 @@
+import torch
+import torch.nn.functional as F
+import numpy as np
+from torch.autograd import Variable
+
+class STFT(torch.nn.Module):
+    def __init__(self, filter_length=1024, hop_length=512, **kwargs):
+        super(STFT, self).__init__()
+        self.input_data = kwargs.get('input_data')
+        self.size = kwargs.get('size')
+        self.magnitude = kwargs.get('magnitude')
+        self.phase = kwargs.get('phase')
+        self.inv = kwargs.get('inv')
+        self.filter_length = filter_length
+        self.hop_length = hop_length
+        self.forward_transform = None
+        scale = self.filter_length / self.hop_length
+        fourier_basis = np.fft.fft(np.eye(self.filter_length))
+
+        cutoff = int((self.filter_length / 2 + 1))
+        fourier_basis = np.vstack([np.real(fourier_basis[:cutoff, :]),
+                                   np.imag(fourier_basis[:cutoff, :])])
+        forward_basis = torch.FloatTensor(fourier_basis[:, None, :])
+        inverse_basis = torch.FloatTensor(np.linalg.pinv(scale * fourier_basis).T[:, None, :])
+
+        self.register_buffer('forward_basis', forward_basis.float())
+        self.register_buffer('inverse_basis', inverse_basis.float())
+
+    def transform(self, input_data):
+            num_batches = input_data.size(0)
+            num_samples = input_data.size(1)
+
+            self.num_samples = num_samples
+
+            input_data = input_data.view(num_batches, 1, num_samples)
+            forward_transform = F.conv1d(input_data,
+                                         Variable(self.forward_basis, requires_grad=False),
+                                         stride = self.hop_length,
+                                         padding = self.filter_length)
+            cutoff = int((self.filter_length / 2) + 1)
+            real_part = forward_transform[:, :cutoff, :]
+            imag_part = forward_transform[:, cutoff:, :]
+
+            magnitude = torch.sqrt(real_part**2 + imag_part**2)
+            phase = torch.autograd.Variable(torch.atan2(imag_part.data, real_part.data))
+            #print(magnitude.shape)
+            #print(phase.shape)
+            return magnitude, phase
+
+    def inverse(self, magnitude, phase):
+        inverse_wav = []
+        size = self.size
+        for m, p, s in zip(magnitude, phase, size):
+            m = m.unsqueeze(0)
+            p = p.unsqueeze(0)
+            # print("m shape: %s" %(str(m.shape)))=
+            self.num_samples = s
+            recombine_magnitude_phase = torch.cat([m*torch.cos(p),
+                                                   m*torch.sin(p)], dim=1)
+
+            inverse_transform = F.conv_transpose1d(recombine_magnitude_phase,
+                                                   Variable(self.inverse_basis, requires_grad=False),
+                                                   stride=self.hop_length,
+                                                   padding=0)
+            # print("inv shape: %s" %(str(inverse_transform.shape)))
+            inverse_transform = inverse_transform[:, :, self.filter_length:]
+            inverse_transform = inverse_transform[:, :, :self.num_samples]
+            inverse_wav.append(inverse_transform)
+        inverse_wav = torch.stack(inverse_wav)
+        return inverse_wav
+    def forward(self, inv=False):
+        if (inv):
+            result = self.inverse(self.magnitude, self.phase)
+        else:
+            result = self.transform(self.input_data)
+        return result
